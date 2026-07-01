@@ -1,0 +1,17 @@
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+requests>=2.31.0
+numpy>=1.24.0
+pypdf>=4.0.0
+python-docx>=1.1.0
+openpyxl>=3.1.0
+neo4j>=5.20.0
+
+
+# 推荐检索依赖：满足需求文档中的 Hugging Face Embedding + FAISS。
+# 如果安装失败，系统仍可使用内置 hashing embedding 降级运行，方便课堂演示。
+sentence-transformers>=2.7.0
+faiss-cpu>=1.8.0
+pytest>=7.4.0
+pymysql>=1.1.1

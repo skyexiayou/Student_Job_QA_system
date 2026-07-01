@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+.env
+.pip-cache/
+
+data/conversations/*.json
+data/documents/*
+data/models/*
+data/app.db
+
+*.log
+*.tmp

@@ -5,7 +5,7 @@
 ## 快速启动
 
 ```bash
-cd E:\26大三下\26课内学习\生产实习\project\rag_student_job_qa_system
+cd 你自己的目录
 D:\Anaconda\python.exe run.py
 ```
 

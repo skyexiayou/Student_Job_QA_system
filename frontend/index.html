@@ -7,7 +7,7 @@
   <script src="/assets/vendor/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --blue: #356fff;
       --blue-2: #4b7cff;
@@ -79,6 +79,7 @@
     body.dark .sidebar-footer .user-info .user-email { color: var(--muted); }
     .goal-list { display: grid; gap: 10px; margin-top: 8px; }
     .goal-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--soft); border-radius: 12px; }
+    .goal-actions { display: flex; align-items: center; gap: 10px; }
     .goal-name { font-weight: 800; }
     .goal-date { font-size: 12px; color: var(--muted); margin-top: 3px; }
     .goal-countdown { display: flex; align-items: baseline; gap: 3px; }
@@ -106,6 +107,10 @@
     .job-chat-msg-content { max-width: 70%; }
     .job-chat-msg-name { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
     .job-chat-msg-bubble { padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.7; word-break: break-word; }
+    .msg-actions { display: flex; gap: 8px; margin-top: 6px; }
+    .msg-action-btn { width: 28px; height: 28px; padding: 0; border-radius: 6px; border: 1px solid var(--line); background: #fff; color: #6b7280; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.6; transition: all 0.2s; }
+    .msg-action-btn:hover { opacity: 1; background: rgba(53,111,255,.08); border-color: var(--blue); color: var(--blue); }
+    .msg-action-btn svg { width: 14px; height: 14px; display: block; stroke: currentColor; }
     .job-chat-msg-bubble p { margin: 4px 0; }
     .job-chat-msg-bubble h1 { font-size: 16px; font-weight: 900; margin: 10px 0 6px; padding-bottom: 4px; border-bottom: 2px solid var(--blue); }
     .job-chat-msg-bubble h2 { font-size: 14px; font-weight: 900; margin: 8px 0 4px; padding-bottom: 2px; border-bottom: 1px solid rgba(53,111,255,.2); }
@@ -121,6 +126,20 @@
     .job-chat-msg-bubble .bullet { color: var(--blue); font-weight: 900; margin-right: 6px; }
     .job-chat-msg-bubble .num { color: var(--blue); font-weight: 800; margin-right: 4px; }
     .job-chat-msg-bubble blockquote { border: 1px solid rgba(53,111,255,.18); padding: 8px 12px; margin: 10px 0; background: rgba(53,111,255,.05); border-radius: 8px; color: var(--muted); font-style: italic; }
+    .bubble p, .job-chat-msg-bubble p { margin: 8px 0; }
+    .bubble h1, .job-chat-msg-bubble h1 { font-size: 17px; line-height: 1.45; font-weight: 900; margin: 16px 0 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(53,111,255,.22); color: var(--text); }
+    .bubble h1:first-child, .job-chat-msg-bubble h1:first-child { margin-top: 0; }
+    .bubble h2, .job-chat-msg-bubble h2 { font-size: 15px; line-height: 1.45; font-weight: 900; margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 1px solid rgba(53,111,255,.16); color: var(--text); }
+    .bubble h3, .job-chat-msg-bubble h3 { font-size: 14px; line-height: 1.45; font-weight: 800; margin: 12px 0 5px; color: var(--text); }
+    .bubble ul, .bubble ol, .job-chat-msg-bubble ul, .job-chat-msg-bubble ol { margin: 8px 0 12px; padding-left: 1.35em; list-style-position: outside; }
+    .bubble ul, .job-chat-msg-bubble ul { list-style-type: disc; }
+    .bubble ol, .job-chat-msg-bubble ol { list-style-type: decimal; }
+    .bubble li, .job-chat-msg-bubble li { margin: 6px 0; padding-left: 2px; line-height: 1.78; }
+    .bubble .md-li-depth-1, .job-chat-msg-bubble .md-li-depth-1 { margin-left: 1em; }
+    .bubble .md-li-depth-2, .job-chat-msg-bubble .md-li-depth-2 { margin-left: 2em; }
+    .bubble .md-li-depth-3, .job-chat-msg-bubble .md-li-depth-3 { margin-left: 3em; }
+    .bubble li::marker, .job-chat-msg-bubble li::marker { color: var(--blue); font-weight: 900; }
+    .bubble .md-source, .job-chat-msg-bubble .md-source { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--line); color: var(--muted); font-size: 12px; line-height: 1.65; }
     .job-chat-msg.user .job-chat-msg-bubble { background: var(--blue); color: #fff; border-bottom-right-radius: 4px; }
     .job-chat-msg:not(.user) .job-chat-msg-bubble { background: var(--soft); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
     .job-chat-footer { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--line); background: var(--soft); align-items: center; }
@@ -151,8 +170,9 @@
     .jobs-right .job-chat-body { flex: 1; min-height: 0; }
     .job-chat-msg-avatar img { width: 100%; height: 100%; border-radius: 10px; object-fit: cover; }
     [v-cloak] { display: none; }
-    html, body, #app { height: 100%; }
-    body { margin: 0; overflow: hidden; background: var(--bg); color: var(--text); font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif; }
+    html, body, #app { height: 100%; margin: 0; padding: 0; }
+    html { margin: 0; padding: 0; }
+    body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); color: var(--text); font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif; }
     button, input, textarea { font: inherit; }
     button { border: 0; border-radius: 10px; cursor: pointer; }
     button:disabled { opacity: .55; cursor: not-allowed; }
@@ -181,9 +201,18 @@
     .switch-tip { margin-top: 18px; text-align: center; color: var(--muted); font-size: 14px; }
     .switch-tip a { color: var(--blue); cursor: pointer; font-weight: 800; }
 
-    .layout { height: 100%; display: grid; grid-template-columns: var(--sidebar) 1fr; overflow: hidden; }
-    .sidebar { background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 16px; overflow: hidden; }
-    .logo { display: flex; gap: 12px; align-items: center; padding: 8px; margin-bottom: 22px; }
+    .layout { height: 100%; display: grid; grid-template-columns: var(--sidebar) 1fr; overflow: hidden; transition: grid-template-columns .24s ease; position: relative; margin: 0; padding: 0; }
+    .layout.sidebar-collapsed { grid-template-columns: 0 1fr; }
+    .sidebar { background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 0 16px 16px; overflow: hidden; transition: transform .24s ease, opacity .2s ease, padding .24s ease; position: relative; z-index: 5; }
+    .layout.sidebar-collapsed .sidebar { transform: translateX(-100%); opacity: 0; padding-left: 0; padding-right: 0; border-right-color: transparent; }
+    .layout.sidebar-collapsed .graph-page { grid-template-columns: 280px minmax(0,1fr) 320px; }
+    .sidebar-toggle { position: absolute; left: calc(var(--sidebar) + 14px); top: 18px; width: 32px; height: 32px; padding: 0; border-radius: 10px; border: 1px solid transparent; background: #f4f7fc; color: #111827; z-index: 30; display: grid; place-items: center; box-shadow: none; transition: left .24s ease, background .18s ease, border-color .18s ease, color .18s ease; }
+    .layout.sidebar-collapsed .sidebar-toggle { left: 16px; }
+    .sidebar-toggle:hover { background: #eaf1ff; border-color: #d8e5ff; color: var(--blue); }
+    .sidebar-toggle:focus-visible { outline: none; border-color: #8ab0ff; box-shadow: 0 0 0 4px rgba(47,109,246,.12); }
+    .sidebar-toggle-icon { position: relative; width: 18px; height: 18px; border: 2px solid currentColor; border-radius: 5px; display: block; }
+    .sidebar-toggle-icon::before { content: ""; position: absolute; top: 1px; bottom: 1px; left: 5px; width: 2px; border-radius: 2px; background: currentColor; }
+    .logo { display: flex; gap: 12px; align-items: center; padding: 0 8px 8px; margin-bottom: 22px; }
     .logo-mark { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg,#1c73ff,#6aa8ff); font-weight: 900; flex: 0 0 34px; }
     .logo-title { font-weight: 900; line-height: 1.25; font-size: 15px; white-space: nowrap; }
     .logo-sub { color: var(--muted); font-size: 12px; margin-top: 2px; white-space: nowrap; }
@@ -192,12 +221,12 @@
     .nav-list { display: grid; gap: 5px; }
     .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; cursor: pointer; color: #526274; font-size: 14px; }
     .nav-item:hover, .nav-item.active { background: #f0f5ff; color: var(--blue); font-weight: 800; }
-    .sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line); position: relative; }
+    .sidebar-footer { margin-top: auto; margin-bottom: 20px; padding-top: 16px; border-top: 1px solid var(--line); position: relative; }
     .user-profile-btn { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: transparent; text-align: left; }
     .avatar { width: 34px; height: 34px; border-radius: 50%; background: #e8f0ff; color: var(--blue); display: grid; place-items: center; font-weight: 900; overflow: hidden; flex-shrink: 0; }
     .avatar img { width: 100%; height: 100%; object-fit: cover; }
     .user-info { min-width: 0; flex: 1; }
-    .user-name, .chat-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .user-name { font-size: 14px; font-weight: 800; }
     .user-email { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .settings-dropdown { position: absolute; left: 0; bottom: 58px; width: 190px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 8px 0; z-index: 20; }
@@ -224,10 +253,14 @@
     .card + .card { margin-top: 18px; }
     .card-head, .page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
     .card h3, .page-header h2 { margin: 0; }
-    .job-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
+    .job-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; overflow-y: auto; padding-right: 8px; }
+    .job-grid::-webkit-scrollbar { width: 6px; }
+    .job-grid::-webkit-scrollbar-track { background: transparent; }
+    .job-grid::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    .job-grid::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
     .job-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px; cursor: pointer; transition: .18s; }
     .job-card:hover, .job-card.active { transform: none; box-shadow: none; border-color: #a9c0ff; }
-    .job-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-weight: 900; margin-bottom: 12px; }
+    .job-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; margin-bottom: 12px; }
     .job-name { font-weight: 900; margin-bottom: 4px; }
     .job-type { color: var(--muted); font-size: 12px; }
     .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 16px; }
@@ -242,16 +275,30 @@
 
     .chat-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 292px 1fr; background: #f7faff; overflow: hidden; }
     .chat-sidebar { min-height: 0; background: #fff; border-right: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column; overflow: hidden; }
-    .history-section { min-height: 0; overflow-y: auto; flex: 1; }
+    .history-section { min-height: 0; overflow-y: auto; overflow-x: hidden; flex: 1; }
     .history-section h3 { margin: 0 0 12px; font-size: 13px; color: var(--muted); padding: 0 8px; }
     .history-list { display: grid; gap: 6px; }
-    .history-item { display: flex; align-items: center; gap: 10px; padding: 11px 10px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; }
+    .history-item { display: flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; padding: 11px 10px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; }
     .history-item:hover, .history-item.active { background: #f0f5ff; border-color: #d9e6ff; }
     .chat-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--soft); display: grid; place-items: center; color: var(--blue); flex-shrink: 0; font-weight: 800; overflow: hidden; }
     .chat-icon img { width: 100%; height: 100%; object-fit: cover; }
-    .chat-info { min-width: 0; flex: 1; }
+    .chat-info { min-width: 0; flex: 1; overflow: hidden; }
+    .chat-title { font-size: 13px; font-weight: 500; line-height: 1.35; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .chat-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .delete-btn { background: transparent; color: #9ca3af; padding: 5px; font-size: 12px; }
+    .delete-btn { width: 24px; height: 24px; background: transparent; color: #9ca3af; padding: 0; border: none; border-radius: 6px; font-size: 14px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.2s; }
+    .history-item:hover .delete-btn { opacity: 1; }
+    .delete-btn:hover { background: #fee2e2; color: #ef4444; }
+    .new-chat-item:hover { background: #f0f5ff; }
+    .context-menu { position: fixed; min-width: 160px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.12); z-index: 1000; overflow: hidden; }
+    .context-menu-item { display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer; color: #374151; font-size: 13px; transition: background 0.15s; }
+    .context-menu-item:hover { background: #f3f4f6; }
+    .context-menu-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .history-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
+    .history-item:hover .history-actions { opacity: 1; }
+    .action-btn { width: 26px; height: 26px; padding: 0; border: none; border-radius: 6px; background: transparent; color: #9ca3af; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+    .action-btn:hover { background: #f3f4f6; color: #374151; }
+    .action-btn.danger:hover { background: #fee2e2; color: #ef4444; }
+    .action-btn svg { width: 14px; height: 14px; }
     .chat-main { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
     .chat-header { height: 60px; flex: 0 0 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background: #fff; border-bottom: 1px solid var(--line); }
     .chat-header h2 { margin: 0; font-size: 24px; }
@@ -293,6 +340,14 @@
     .thinking .dot:nth-child(2) { animation-delay: .2s; }
     .thinking .dot:nth-child(3) { animation-delay: .4s; }
     @keyframes blink { 0%, 20% { opacity: 0; } 45%, 100% { opacity: 1; } }
+    .msg-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .msg-action-btn { width: 28px; height: 28px; display: grid; place-items: center; border: none; background: transparent; color: var(--muted); cursor: pointer; border-radius: 6px; transition: all .18s; }
+    .msg-action-btn:hover { background: #f0f5ff; color: var(--blue); }
+    .msg-action-btn svg { width: 14px; height: 14px; }
+    .session-type { font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-right: 6px; }
+    .session-type.chat { background: #e0f2fe; color: #0369a1; }
+    .session-type.interview { background: #fef3c7; color: #b45309; }
+    .session-type.job { background: #fce7f3; color: #be185d; }
     .sources { margin-top: 12px; display: grid; gap: 8px; }
     .source-card { background: #f7faff; border: 1px solid #e1e9f6; border-radius: 10px; padding: 10px; color: #526274; font-size: 12px; }
     .chat-footer { flex: 0 0 auto; padding: 16px 28px 20px; background: #fff; border-top: 1px solid var(--line); }
@@ -307,7 +362,7 @@
     .send-btn svg { display: block; stroke: currentColor; }
     .model-chip { font-size: 12px; color: #64748b; padding: 6px 10px; background: #f8fafc; border-radius: 999px; }
 
-    .docs-layout { display: grid; grid-template-columns: 330px minmax(0,1fr); gap: 20px; }
+    .docs-layout { display: grid; grid-template-columns: 330px minmax(0,1fr); gap: 20px; align-items: stretch; }
     .category-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
     .category-tab { padding: 8px 14px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: #526274; }
     .category-tab.active { background: #f0f5ff; color: var(--blue); border-color: #a9c0ff; font-weight: 800; }
@@ -333,6 +388,27 @@
     .modal h3 { margin: 0 0 18px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
     .modal-actions button { padding: 10px 18px; }
+    .upload-result-modal { width: min(520px,calc(100vw - 32px)); }
+    .upload-result-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+    .upload-result-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: #e8f7f0; color: #0f8f64; font-weight: 900; flex: 0 0 auto; }
+    .upload-result-title { margin: 0; font-size: 18px; color: var(--text); }
+    .upload-result-subtitle { margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .upload-result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+    .upload-result-stat { border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: #f8fbff; }
+    .upload-result-stat b { display: block; font-size: 20px; line-height: 1.1; color: var(--text); }
+    .upload-result-stat span { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+    .upload-result-list { max-height: 150px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+    .upload-result-row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 10px; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .upload-result-row:last-child { border-bottom: 0; }
+    .upload-result-row strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+    .upload-result-row span { flex: 0 0 auto; color: var(--muted); }
+    .upload-result-foot { margin-top: 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .doc-preview-modal { width: min(900px,calc(100vw - 40px)); height: min(700px,calc(100vh - 80px)); background: #fff; border-radius: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; }
+    .doc-preview-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--soft); }
+    .doc-preview-header h3 { margin: 0; font-size: 15px; font-weight: 600; color: #333; }
+    .doc-preview-header .close-btn { width: 32px; height: 32px; padding: 0; border-radius: 8px; display: grid; place-items: center; font-size: 16px; }
+    .doc-preview-body { flex: 1; overflow: auto; padding: 16px; background: #f8fafc; }
+    .doc-preview-frame { width: 100%; height: 100%; border: none; border-radius: 8px; background: #fff; }
     .avatar-upload-area { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
     .avatar-preview { width: 58px; height: 58px; border-radius: 50%; overflow: hidden; background: #e8f0ff; display: grid; place-items: center; color: var(--blue); font-weight: 900; }
     .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
@@ -383,11 +459,11 @@
     .layout { background: var(--bg); }
     .sidebar {
       background: #fbfcfe;
-      padding: 18px 14px;
+      padding: 0 14px 18px;
     }
     body.dark .sidebar { background: #0f1728; }
     .logo {
-      padding: 10px 12px 18px;
+      padding: 0 12px 18px;
       margin-bottom: 10px;
       border-bottom: 1px solid var(--line);
     }
@@ -575,6 +651,11 @@
     }
     .modal-overlay { background: rgba(15, 23, 42, .42); }
     .modal { box-shadow: var(--shadow); }
+    .doc-preview-modal { background: var(--card); }
+    .doc-preview-header { background: var(--soft); border-bottom-color: var(--line); }
+    .doc-preview-header h3 { color: var(--text); }
+    .doc-preview-body { background: var(--bg); }
+    .doc-preview-frame { background: var(--card); }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: .001ms !important;
@@ -592,7 +673,7 @@
       .layout { grid-template-columns: var(--sidebar) 1fr; }
       .sidebar { padding: 12px 8px; }
       .logo { justify-content: center; padding: 8px 0 14px; }
-      .logo div:last-child, .nav-item span, .sidebar-footer .user-info { display: none; }
+      .logo div:last-child, .nav-label, .sidebar-footer .user-info { display: none; }
       .nav-item { justify-content: center; padding: 12px 8px; }
       .topbar { padding: 0 16px; }
       .content { padding: 16px; }
@@ -617,32 +698,123 @@
       .composer-actions { align-items: flex-end; gap: 8px; }
       .model-chip { display: none; }
     }
-    .graph-page { height: 100%; min-height: 0; display: grid; grid-template-columns: 310px minmax(0,1fr) 340px; background: var(--bg); overflow: hidden; }
-    .graph-left, .graph-right { min-height: 0; overflow: auto; background: var(--card); border-color: var(--line); padding: 16px; }
-    .graph-left { border-right: 1px solid var(--line); }
-    .graph-right { border-left: 1px solid var(--line); }
-    .graph-center { min-width: 0; min-height: 0; position: relative; }
-    .graph-toolbar { position: absolute; z-index: 3; left: 16px; top: 14px; display: flex; gap: 8px; align-items: center; }
-    .graph-canvas { width: 100%; height: 100%; min-height: 520px; }
-    .graph-search { display: flex; gap: 8px; margin-bottom: 14px; }
-    .graph-search input { flex: 1; height: 38px; border-radius: 8px; padding: 0 10px; background: var(--bg); color: var(--text); }
-    .graph-category { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
-    .graph-category-title { width: 100%; display: flex; justify-content: space-between; gap: 8px; padding: 11px 12px; background: transparent; color: var(--text); text-align: left; border-radius: 0; }
-    .graph-category-title.active { background: #e8f0ff; color: #194fb8; }
-    body.dark .graph-category-title.active { background: #172844; color: #9ec1ff; }
-    .graph-category-body { padding: 0 12px 12px; color: var(--muted); font-size: 12px; line-height: 1.65; }
-    .graph-result, .graph-relation { padding: 10px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
-    .graph-result:hover, .graph-relation:hover { border-color: #9bbcff; background: #f4f8ff; }
-    body.dark .graph-result:hover, body.dark .graph-relation:hover { background: #172844; }
-    .graph-node-title { font-size: 18px; font-weight: 900; margin-bottom: 6px; }
-    .graph-node-type { display: inline-flex; padding: 3px 8px; border-radius: 999px; background: var(--soft); color: var(--blue); font-size: 12px; font-weight: 800; }
-    .graph-props { margin: 14px 0; display: grid; gap: 8px; }
-    .graph-prop { display: grid; grid-template-columns: 88px minmax(0,1fr); gap: 8px; font-size: 13px; line-height: 1.55; }
-    .graph-prop-key { color: var(--muted); }
-    .graph-prop-value { word-break: break-word; }
-    .graph-empty { height: 100%; display: grid; place-items: center; color: var(--muted); text-align: center; padding: 20px; }
-    @media (max-width: 1180px) { .graph-page { grid-template-columns: 270px minmax(0,1fr); } .graph-right { display: none; } }
-    @media (max-width: 860px) { .graph-page { grid-template-columns: 1fr; } .graph-left { display: none; } .graph-canvas { min-height: calc(100vh - 64px); } }
+    .graph-page { height: 100%; min-height: 0; display: grid; grid-template-columns: 280px minmax(0,1fr) 320px; background: #ffffff; color: #333333; overflow: hidden; }
+    .graph-left, .graph-right { min-height: 0; overflow: auto; background: #ffffff; padding: 0; }
+    .graph-left { border-right: 1px solid #e8e8e8; }
+    .graph-right { border-left: 1px solid #e8e8e8; }
+    .graph-center { min-width: 0; min-height: 0; position: relative; background: #ffffff; overflow: hidden; }
+    .graph-toolbar { position: absolute; z-index: 3; left: 16px; right: 16px; top: 10px; display: flex; gap: 8px; align-items: center; color: #666666; pointer-events: none; }
+    .graph-toolbar > * { pointer-events: auto; }
+    .graph-toolbar button { height: 28px; padding: 0 10px; border-radius: 4px; background: transparent; color: #666666; border: 1px solid #dcdcdc; font-size: 12px; font-weight: 500; }
+    .graph-toolbar button:hover { background: #f5f5f5; border-color: #bfbfbf; }
+    .graph-toolbar .notice { margin-left: auto; color: #999999; font-size: 12px; font-weight: 400; }
+    .graph-canvas { display: block; width: 100%; height: 100%; min-height: 480px; }
+    .graph-search-panel { padding: 14px; border-bottom: 1px solid #f0f0f0; }
+    .graph-search { display: flex; gap: 8px; margin-bottom: 12px; }
+    .graph-search input { flex: 1; min-width: 0; height: 34px; border-radius: 4px; padding: 0 12px; background: #fafafa; color: #333333; border: 1px solid #e0e0e0; font-size: 12px; }
+    .graph-search input::placeholder { color: #bbbbbb; }
+    .graph-search input:focus { border-color: #4a9b9b; background: #ffffff; outline: none; }
+    .graph-search .primary { min-width: 60px; height: 34px; border-radius: 4px; background: #4a9b9b; color: #ffffff; font-size: 12px; font-weight: 500; border: none; }
+    .graph-search .primary:hover { background: #3d8585; }
+    .graph-filter-container { display: flex; flex-direction: column; gap: 8px; }
+    .graph-filter-row { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+    .graph-filter-row::-webkit-scrollbar { display: none; }
+    .graph-filter-row::-webkit-scrollbar-track { background: transparent; }
+    .graph-filter-row::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 2px; }
+    .graph-filter-row::-webkit-scrollbar-thumb:hover { background: #b0b0b0; }
+    .graph-filter-expand { align-self: flex-start; padding: 4px 10px; border: 1px solid #e0e0e0; background: #ffffff; color: #999999; font-size: 11px; border-radius: 4px; cursor: pointer; transition: all 0.2s ease; }
+    .graph-filter-expand:hover { border-color: #4a9b9b; color: #4a9b9b; }
+    .graph-filter-row.expanded { flex-wrap: wrap; }
+    .graph-filter-row.expanded::-webkit-scrollbar { display: none; }
+    .graph-filter-chip { flex: 0 0 auto; padding: 4px 10px; border-radius: 4px; border: 1px solid #e0e0e0; background: #ffffff; color: #666666; font-size: 12px; font-weight: 400; transition: all 0.2s ease; }
+    .graph-filter-chip:hover { background: #f0f7f7; border-color: #a8c7c7; color: #3d6b6b; }
+    .graph-filter-chip.active { background: #4a9b9b; border-color: #4a9b9b; color: #ffffff; }
+    .graph-result-list { display: grid; gap: 0; }
+    .graph-result-list > .notice { padding: 8px 14px; color: #999999; font-size: 12px; font-weight: 500; }
+    .graph-result, .graph-relation { border: 0; border-bottom: 1px solid #f0f0f0; border-radius: 0; margin: 0; cursor: pointer; }
+    .graph-result { padding: 12px 14px; background: #ffffff; color: #333333; transition: background-color 0.2s ease; }
+    .graph-result:hover { background: #fafafa; }
+    .graph-result.active { background: #f3eef7; }
+    .graph-result b { display: block; color: #333333; margin-bottom: 3px; font-size: 13px; font-weight: 500; line-height: 1.4; }
+    .graph-result .notice { color: #999999; font-size: 11px; }
+    .graph-result-snippet { color: #aaaaaa; font-size: 11px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 4px; }
+    .graph-category { display: none; }
+    .graph-right > div:not(.graph-empty) { padding: 20px; }
+    .graph-node-header { margin-bottom: 20px; }
+    .graph-node-title { color: #1a1a2e; font-size: 16px; font-weight: 700; line-height: 1.6; margin-bottom: 10px; word-break: break-word; }
+    .graph-node-type { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: linear-gradient(135deg,#e8f4ff,#d4e8ff); color: #2563eb; font-size: 12px; font-weight: 600; }
+    .graph-node-type::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #2563eb; }
+    .graph-props { margin: 0; display: grid; gap: 12px; }
+    .graph-prop { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; background: #f8fafc; border-radius: 12px; transition: all 0.2s ease; }
+    .graph-prop:hover { background: #f1f5f9; transform: translateX(2px); }
+    .graph-prop-key { color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .graph-prop-value { color: #1e293b; font-size: 13px; line-height: 1.6; word-break: break-word; font-weight: 500; }
+    .graph-relation-section { margin-top: 24px; }
+    .graph-relation-section h3 { color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .graph-relation-section h3::before { content: ''; width: 4px; height: 14px; border-radius: 2px; background: #2563eb; }
+    .graph-relation-list { display: grid; gap: 8px; }
+    .graph-relation { padding: 12px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; color: #475569; transition: all 0.2s ease; cursor: pointer; }
+    .graph-relation:hover { background: #eff6ff; border-color: #bfdbfe; transform: translateX(4px); }
+    .graph-relation b { display: block; margin-bottom: 4px; color: #1e293b; font-size: 13px; font-weight: 600; word-break: break-word; line-height: 1.5; }
+    .graph-relation .notice { color: #94a3b8; font-size: 11px; }
+    .graph-empty { height: 100%; display: grid; place-items: center; color: #cbd5e1; text-align: center; padding: 20px; font-size: 13px; }
+    .graph-empty-icon { width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #94a3b8; }
+    body.dark .graph-page, body.dark .graph-left, body.dark .graph-right, body.dark .graph-center { background: #1e1e2e; color: #cdd6f4; }
+    body.dark .graph-left, body.dark .graph-right { border-color: #313244; }
+    body.dark .graph-search input { background: #313244; color: #cdd6f4; border-color: #45475a; }
+    body.dark .graph-search input::placeholder { color: #6c7086; }
+    body.dark .graph-filter-chip { background: #313244; color: #a6adc8; border-color: #45475a; }
+    body.dark .graph-filter-chip:hover { background: #45475a; border-color: #7aa2f7; color: #cdd6f4; }
+    body.dark .graph-filter-chip.active { background: #7aa2f7; border-color: #7aa2f7; color: #1e1e2e; }
+    body.dark .graph-filter-expand { background: #313244; color: #a6adc8; border-color: #45475a; }
+    body.dark .graph-filter-expand:hover { border-color: #7aa2f7; color: #7aa2f7; }
+    body.dark .graph-result { background: #1e1e2e; color: #cdd6f4; }
+    body.dark .graph-result:hover { background: #313244; }
+    body.dark .graph-result.active { background: #313244; }
+    body.dark .graph-result b { color: #cdd6f4; }
+    body.dark .graph-node-title { color: #cdd6f4; }
+    body.dark .graph-node-type { background: rgba(122,162,247,0.15); color: #7aa2f7; }
+    body.dark .graph-node-type::before { background: #7aa2f7; }
+    body.dark .graph-prop { background: #313244; }
+    body.dark .graph-prop:hover { background: #45475a; }
+    body.dark .graph-prop-key { color: #a6adc8; }
+    body.dark .graph-prop-value { color: #cdd6f4; }
+    body.dark .graph-relation { background: #313244; border-color: #45475a; color: #a6adc8; }
+    body.dark .graph-relation:hover { background: #45475a; border-color: #7aa2f7; }
+    body.dark .graph-relation b { color: #cdd6f4; }
+    body.dark .graph-empty { color: #6c7086; }
+    body.dark .graph-empty-icon { background: #313244; color: #6c7086; }
+    @media (max-width: 1500px) {
+      .graph-page { grid-template-columns: 300px minmax(0,1fr); }
+      .layout.sidebar-collapsed .graph-page { grid-template-columns: 300px minmax(0,1fr); }
+      .graph-right { display: none; }
+    }
+    @media (max-width: 860px) {
+      .topbar { min-height: 64px; height: auto; padding: 10px 14px 10px 58px; align-items: flex-start; gap: 10px; }
+      .topbar-title { line-height: 36px; max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .topbar-right { margin-left: auto; }
+      .graph-page { grid-template-columns: 1fr; grid-template-rows: auto minmax(0,1fr); }
+      .layout.sidebar-collapsed .graph-page { grid-template-columns: 1fr; grid-template-rows: auto minmax(0,1fr); }
+      .graph-left { display: block; max-height: 214px; border-right: 0; border-bottom: 1px solid #e8e8e8; }
+      .graph-right { display: none; }
+      .graph-result-list { display: none; }
+      .graph-toolbar { left: 12px; right: 12px; top: 10px; }
+      .graph-toolbar .notice { display: none; }
+      .graph-canvas { min-height: calc(100vh - 280px); }
+    }
+    .upload-area.dragging { background: #eaf2ff; border-color: #2563eb; box-shadow: inset 0 0 0 1px rgba(37,99,235,.25); }
+    .upload-queue { display: grid; gap: 8px; margin-top: 12px; max-height: 180px; overflow: auto; }
+    .upload-file { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 13px; }
+    .upload-file-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .upload-file button { padding: 4px 8px; font-size: 12px; }
+    .reader-preview { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(320px, 1fr) auto; gap: 12px; }
+    .pdf-frame { width: 100%; height: 100%; min-height: 460px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+    .reader-text-title { font-weight: 900; margin: 4px 0 8px; }
+    body.dark .upload-file { background: var(--surface-2); border-color: #2b3749; }
+    .topbar-search { flex: 1; max-width: 520px; margin: 0 18px; display: flex; gap: 8px; align-items: center; }
+    .topbar-search input { width: 100%; height: 38px; border-radius: 9px; padding: 0 12px; background: #f8fbff; color: var(--text); border: 1px solid var(--line); }
+    .topbar-search button { height: 38px; padding: 0 14px; font-weight: 800; }
+    body.dark .topbar-search input { background: var(--surface-2); border-color: #2b3749; color: var(--text); }
   
     /* Refined login entry: calm product UI for the campus career assistant. */
     .login-page {
@@ -761,6 +933,19 @@
       border-radius: 9px;
       color: #40536b;
       font-weight: 800;
+    }
+    .nav-icon {
+      width: 22px;
+      flex: 0 0 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      line-height: 1;
+    }
+    .nav-label {
+      min-width: 0;
+      line-height: 1;
     }
     .nav-item:hover { background: #eef4ff; color: var(--brand-strong); }
     .nav-item.active { background: var(--brand-soft); color: #1746a2; }
@@ -912,7 +1097,20 @@
       border-color: #dbe5f3;
     }
     .user .bubble, .job-chat-msg.user .job-chat-msg-bubble { background: var(--brand); }
-    .bubble, .job-chat-msg-bubble { line-height: 1.72; }
+    .bubble, .job-chat-msg-bubble { line-height: 1.78; }
+    .bubble ul, .bubble ol, .job-chat-msg-bubble ul, .job-chat-msg-bubble ol {
+      padding-left: 1.35em;
+      margin: 8px 0 12px;
+      list-style-position: outside;
+    }
+    .bubble li, .job-chat-msg-bubble li {
+      margin: 6px 0;
+      padding-left: 2px;
+    }
+    .bubble .md-source, .job-chat-msg-bubble .md-source {
+      color: var(--ink-3);
+      border-top: 1px dashed #d6e0ee;
+    }
     .composer-shell, .job-chat-footer {
       background: #f8fbff;
       border-color: #dde6f3;
@@ -1003,6 +1201,11 @@
       background: var(--surface-2);
       border-color: #2b3749;
     }
+    body.dark .upload-result-icon { background: #123829; color: #61d7a5; }
+    body.dark .upload-result-stat, body.dark .upload-result-list { background: var(--surface-2); border-color: #2b3749; }
+    body.dark .upload-result-row { border-color: #2b3749; }
+    body.dark .upload-result-title, body.dark .upload-result-stat b, body.dark .upload-result-row strong { color: var(--ink-1); }
+    body.dark .upload-result-subtitle, body.dark .upload-result-stat span, body.dark .upload-result-row span, body.dark .upload-result-foot { color: var(--ink-3); }
     body.dark .nav-item, body.dark .notice, body.dark .doc-meta { color: var(--ink-3); }
     body.dark .nav-item:hover, body.dark .nav-item.active, body.dark .history-item:hover, body.dark .history-item.active, body.dark .job-card:hover, body.dark .job-card.active {
       background: #172844;
@@ -1048,7 +1251,341 @@
       .job-chat-tools { width: 100%; }
       .job-chat-footer input { min-width: 0; flex: 1 1 calc(100% - 50px); }
     }
-</style>
+    .layout.sidebar-collapsed { grid-template-columns: 0 1fr; }
+    .layout.sidebar-collapsed .sidebar-toggle { left: 16px; }
+    .layout.sidebar-collapsed .topbar-title { padding-left: 50px; }
+    .topbar-title { padding-left: 40px; }
+    body.dark .sidebar-toggle { background: #1f2937; border-color: transparent; color: #e8ecf3; }
+    body.dark .sidebar-toggle:hover { background: #263247; border-color: var(--line); color: var(--blue); }
+    /* Chat polish and dark-mode repair pass */
+    .msg { margin-bottom: 22px; }
+    .msg-content { max-width: min(820px, 74%); }
+    .msg-name { font-weight: 650; letter-spacing: 0; }
+    .assistant .bubble, .interviewer .bubble {
+      color: #1f2d44;
+      border: 1px solid #dbe5f3;
+      background: #fff;
+    }
+    .bubble {
+      padding: 18px 22px;
+      line-height: 1.78;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+    .bubble > :first-child { margin-top: 0; }
+    .bubble > :last-child { margin-bottom: 0; }
+    .bubble p { margin: 9px 0; }
+    .bubble h1, .bubble h2, .bubble h3 {
+      text-wrap: balance;
+      border: 0;
+      padding: 0;
+      color: #10213b;
+    }
+    .bubble h1 { font-size: 18px; margin: 4px 0 12px; }
+    .bubble h2 { font-size: 17px; margin: 16px 0 8px; }
+    .bubble h3 { font-size: 15px; margin: 14px 0 7px; }
+    .bubble ul, .bubble ol { margin: 10px 0; padding-left: 22px; }
+    .bubble li { margin: 7px 0; padding-left: 2px; }
+    .bubble .bullet, .bubble .num { display: none; }
+    .bubble strong { color: #10213b; font-weight: 800; }
+    .bubble strong.highlight {
+      background: #edf4ff;
+      color: #1746a2;
+      border-radius: 5px;
+      padding: 1px 5px;
+    }
+    .bubble blockquote {
+      margin: 12px 0;
+      padding: 10px 12px;
+      border: 1px solid #d8e5f7;
+      background: #f6f9ff;
+      color: #40516a;
+      font-style: normal;
+    }
+    .md-table {
+      display: grid;
+      gap: 1px;
+      margin: 12px 0;
+      overflow: hidden;
+      border: 1px solid #d8e5f7;
+      border-radius: 10px;
+      background: #d8e5f7;
+    }
+    .md-row { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 1px; }
+    .md-cell {
+      min-width: 0;
+      padding: 9px 11px;
+      background: #fff;
+      color: #24344d;
+      line-height: 1.6;
+    }
+    .md-row:first-child .md-cell {
+      background: #f3f7ff;
+      color: #10213b;
+      font-weight: 800;
+    }
+    .sources {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #e7edf7;
+    }
+    .source-card {
+      border-radius: 9px;
+      padding: 10px 12px;
+      background: #f6f9ff;
+      border: 1px solid #d8e5f7;
+      color: #40516a;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+    .sources-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: #40516a;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .sources-toggle {
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid #d8e5f7;
+      border-radius: 999px;
+      background: #fff;
+      color: #1746a2;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .thinking {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 8px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #eef4ff;
+      color: #3d5f96;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .chat-icon {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      background: #eef4ff;
+    }
+    .history-glyph {
+      position: relative;
+      width: 16px;
+      height: 16px;
+      border: 1.7px solid currentColor;
+      border-radius: 5px;
+      opacity: .82;
+    }
+    .history-glyph::before,
+    .history-glyph::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      height: 1.5px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: .78;
+    }
+    .history-glyph::before { top: 5px; }
+    .history-glyph::after { top: 9px; }
+    .new-chat-mark {
+      background: #eaf2ff;
+      color: #1746a2;
+      font-size: 17px;
+      line-height: 1;
+    }
+    .history-item .chat-icon img {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+      display: block;
+    }
+    .icon-btn, .job-chat-tool-btn, .msg-action-btn, .action-btn {
+      display: inline-grid;
+      place-items: center;
+    }
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: #f2f6fd;
+      color: #475b78;
+      border: 1px solid #e1e9f5;
+    }
+    .icon-btn:hover, .icon-btn.active {
+      background: #eaf2ff;
+      color: #1746a2;
+      border-color: #b8d0f5;
+    }
+    body.dark .assistant .bubble, body.dark .interviewer .bubble {
+      background: #121929;
+      border-color: #2b3749;
+      color: #d8e0ed;
+    }
+    body.dark .bubble h1, body.dark .bubble h2, body.dark .bubble h3,
+    body.dark .bubble strong { color: #eef3fb; }
+    body.dark .bubble strong.highlight {
+      background: #172844;
+      color: #9ec1ff;
+    }
+    body.dark .bubble blockquote,
+    body.dark .source-card {
+      background: #172033;
+      border-color: #2b3749;
+      color: #b9c5d8;
+    }
+    body.dark .sources-head { color: #c6d1e2; }
+    body.dark .sources-toggle {
+      background: #121929;
+      border-color: #2b3749;
+      color: #9ec1ff;
+    }
+    body.dark .sources { border-top-color: #2b3749; }
+    body.dark .md-table { background: #2b3749; border-color: #2b3749; }
+    body.dark .md-cell {
+      background: #121929;
+      color: #d8e0ed;
+    }
+    body.dark .md-row:first-child .md-cell {
+      background: #172844;
+      color: #eef3fb;
+    }
+    body.dark .thinking {
+      background: #172844;
+      color: #9ec1ff;
+    }
+    body.dark .chat-icon {
+      background: #172033;
+      color: #9ec1ff;
+      border: 1px solid #2b3749;
+    }
+    body.dark .icon-btn, body.dark .job-chat-tool-btn, body.dark .msg-action-btn, body.dark .action-btn {
+      background: #172033;
+      border-color: #2b3749;
+      color: #c6d1e2;
+    }
+    body.dark .icon-btn:hover, body.dark .icon-btn.active,
+    body.dark .job-chat-tool-btn:hover:not(:disabled) {
+      background: #172844;
+      border-color: #35527c;
+      color: #9ec1ff;
+    }
+    body.dark .chat-footer, body.dark .composer-shell {
+      background: #121929;
+      border-color: #2b3749;
+    }
+    body.dark .history-item {
+      border-color: transparent;
+      color: #d8e0ed;
+    }
+    body.dark .history-item:hover, body.dark .history-item.active {
+      background: #172844;
+      border-color: #35527c;
+    }
+    .interview-config {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfdff;
+      flex-wrap: wrap;
+    }
+    .interview-config label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .interview-config select,
+    .interview-config input {
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text);
+      padding: 0 10px;
+      min-width: 160px;
+    }
+    .interview-config input { min-width: min(360px, 100%); flex: 1; }
+    .interview-restart {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      height: 34px;
+      padding: 0 13px;
+      border-radius: 9px;
+      border: 1px solid #c7d8f0;
+      background: #f7fbff;
+      color: #24508f;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1;
+      transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+    }
+    .interview-restart svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      flex: 0 0 auto;
+    }
+    .interview-restart:hover:not(:disabled) {
+      background: #eef6ff;
+      border-color: #8fb2e5;
+      color: #1746a2;
+      transform: translateY(-1px);
+    }
+    .interview-restart:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .interview-restart:focus-visible {
+      outline: none;
+      border-color: #6b9be2;
+      box-shadow: 0 0 0 3px rgba(53,111,255,.14);
+    }
+    .interview-restart:disabled {
+      background: #f3f6fa;
+      border-color: #dce5f1;
+      color: #8a9aae;
+    }
+    body.dark .interview-config {
+      background: #0f1728;
+      border-color: #2b3749;
+    }
+    body.dark .interview-restart {
+      background: #162033;
+      border-color: #334564;
+      color: #cfe0ff;
+    }
+    body.dark .interview-restart:hover:not(:disabled) {
+      background: #1b2a46;
+      border-color: #54719f;
+      color: #eef5ff;
+    }
+    body.dark .interview-restart:disabled {
+      background: #121929;
+      border-color: #2b3749;
+      color: #6f7f96;
+    }
+    body.dark .interview-config select,
+    body.dark .interview-config input {
+      background: #121929;
+      border-color: #2b3749;
+      color: #eef3fb;
+    }
+  </style>
 </head>
 <body>
   <div id="app" v-cloak>
@@ -1060,7 +1597,6 @@
             <span>校园就业知识助手</span>
           </div>
           <div class="brand-copy">
-            <p class="brand-kicker">RAG Career Assistant</p>
             <h1>把零散求职资料，整理成可追溯的答案。</h1>
             <p class="brand-desc">登录后可以围绕岗位认知、简历优化、面试准备和招聘资讯提问，并查看回答引用的知识来源。</p>
           </div>
@@ -1089,12 +1625,12 @@
         </div>
       </div>
     </section>
-    <section v-else class="layout">
+    <section v-else class="layout" :class="{'sidebar-collapsed': sidebarCollapsed}">
       <aside class="sidebar">
         <div class="logo"><div class="logo-mark">✦</div><div><div class="logo-title">求职岗位知识问答系统</div><div class="logo-sub">大学生求职辅助平台</div></div></div>
         <div class="nav-list">
           <div v-for="nav in navs" :key="nav.key" class="nav-item" :class="{active: currentPage === nav.key}" @click="changePage(nav.key)">
-            <span>{{ nav.icon }}</span><span>{{ nav.name }}</span>
+            <span class="nav-icon">{{ nav.icon }}</span><span class="nav-label">{{ nav.name }}</span>
           </div>
         </div>
         <div class="sidebar-footer">
@@ -1102,6 +1638,7 @@
           <div class="settings-dropdown" v-if="showUserMenu" @click.stop><button @click="openProfileEdit">个人资料</button><button @click="openPasswordEdit">修改密码</button><div class="divider"></div><button @click="logout">退出登录</button></div>
         </div>
       </aside>
+      <button class="sidebar-toggle" :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'" :aria-label="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'" @click="toggleSidebar"><span class="sidebar-toggle-icon" aria-hidden="true"></span></button>
       <main class="main">
         <header class="topbar"><div class="topbar-title">{{ pageTitle }}</div><div class="topbar-right"><span class="notice">{{ statusText }}</span><button class="theme-toggle" :title="isDark ? '切换到浅色模式' : '切换到深色模式'" @click="toggleDark">{{ isDark ? '☀' : '☽' }}</button></div></header>
 
@@ -1111,11 +1648,11 @@
             <div class="grid">
               <div>
                 <div class="card"><div class="card-head"><h3>热门岗位</h3><button class="link-btn" @click="changePage('jobs')">查看全部</button></div><div class="job-grid"><div v-for="job in jobs.slice(0,4)" :key="job.key" class="job-card" @click="selectJob(job)"><div class="job-icon" :style="{background: job.color + '18', color: job.color}">{{ job.icon }}</div><div class="job-name">{{ job.name }}</div><div class="job-type">{{ job.type }}</div></div></div></div>
-                <div class="card"><div class="card-head"><h3>知识问答</h3><button class="link-btn" @click="changePage('chat')">进入对话</button></div><div class="quick-panel"><div><b>可以直接问：</b><div class="notice">RAG 项目写进简历应该怎么描述？没有实习经历怎么找工作？</div></div><button class="primary" @click="sendQuick('RAG 项目写进简历应该怎么描述？')">开始问答</button></div></div>
+                <div class="card"><div class="card-head"><h3>模拟面试</h3><button class="link-btn" @click="changePage('interview')">进入面试</button></div><div class="quick-panel"><div><b>🎯 想练习什么？</b><div class="notice">前端开发 | 后端架构 | 算法基础 | 产品设计</div></div><button class="primary" @click="startInterview">开始模拟面试</button></div></div>
               </div>
               <div>
                 <div class="card"><h3>今日学习数据</h3><div class="stats-grid"><div class="stat-card"><div class="stat-value">{{ stats.document_count || 0 }}</div><div class="stat-label">文档数</div></div><div class="stat-card"><div class="stat-value">{{ stats.chunk_count || 0 }}</div><div class="stat-label">文本块</div></div><div class="stat-card"><div class="stat-value">语义</div><div class="stat-label">检索</div></div></div><div class="notice" style="margin-top:14px;">使用 Hugging Face Embedding，本地知识库优先。</div></div>
-                <div class="card"><div class="card-head"><h3>目标倒计时</h3><button class="link-btn" @click="showGoalModal = true">+ 设置目标</button></div><div v-if="goals.length === 0" class="notice" style="padding:20px 0;">暂无目标，点击右上角添加</div><div v-else class="goal-list"><div v-for="(goal, idx) in goals" :key="idx" class="goal-item"><div class="goal-info"><div class="goal-name">{{ goal.title }}</div><div class="goal-date">{{ goal.date }}</div></div><div class="goal-countdown" :class="{urgent: goal.days <= 3}"><span class="countdown-num">{{ goal.days }}</span><span class="countdown-unit">天</span></div></div></div></div>
+                <div class="card"><div class="card-head"><h3>未来倒计时</h3><button class="link-btn" @click="showGoalModal = true">+ 添加目标</button></div><div v-if="goals.length === 0" class="notice" style="padding:20px 0;">暂无目标，点击右上角添加</div><div v-else class="goal-list"><div v-for="goal in goals" :key="goal.id" class="goal-item"><div class="goal-info"><div class="goal-name">{{ goal.title }}</div><div class="goal-date">{{ goal.date }}</div></div><div class="goal-actions"><div class="goal-countdown" :class="{urgent: goal.days <= 3}"><span class="countdown-num">{{ goal.days }}</span><span class="countdown-unit">天</span></div><button class="ghost" style="font-size:14px;padding:4px 8px;" @click="deleteGoal(goal.id)">删除</button></div></div></div></div>
                 <div class="card"><h3>知识文档入口</h3><p class="notice">上传、分类、阅读、快速提问统一在知识文档页面。</p><button class="primary upload-btn" @click="changePage('docs')">管理知识文档</button></div>
               </div>
             </div>
@@ -1127,7 +1664,7 @@
             <div class="jobs-layout">
               <div class="jobs-left">
                 <div class="card"><div class="card-head"><h3>岗位选择</h3><span class="notice">点击岗位后展示相关文档和智能问答</span></div><div class="job-grid"><div v-for="job in jobs" :key="job.key" class="job-card" :class="{active:selectedJob && selectedJob.key===job.key}" @click="selectJobOnly(job)"><div class="job-icon" :style="{background: job.color + '18', color: job.color}">{{ job.icon }}</div><div class="job-name">{{ job.name }}</div><div class="job-type">{{ job.type }}</div></div></div></div>
-                <div v-if="selectedJob" class="card"><h3>{{ selectedJob.name }}相关文档</h3><p class="notice">系统会按文件名和正文关键词自动分类，用户上传后可在这里看到关联材料。</p><div class="doc-list" style="max-height:400px"><div v-for="doc in relatedJobDocs" :key="doc.id" class="doc-item" @click="openDocument(doc)"><b>{{ doc.filename }}</b><div class="doc-meta"><span>{{ categoryLabel(doc.category) }}</span><span>{{ doc.chunk_count }} 个文本块</span></div></div><div v-if="relatedJobDocs.length===0" class="notice">暂无关联文档，可先到知识文档页面上传岗位资料。</div></div></div>
+                <div v-if="selectedJob" class="card"><div class="card-head"><h3>{{ selectedJob.name }}相关文档</h3><div class="search-bar"><input class="search-input" v-model.trim="jobDocSearch" placeholder="搜索文档名称" /></div></div><div class="doc-list" style="max-height:400px"><div v-for="doc in filteredRelatedJobDocs" :key="doc.id" class="doc-item" @click="openDocModal(doc)"><b>{{ doc.filename }}</b><div class="doc-meta"><span>{{ categoryLabel(doc.category) }}</span><span>{{ doc.chunk_count }} 个文本块</span></div></div><div v-if="filteredRelatedJobDocs.length===0" class="notice">{{ jobDocSearch ? '未找到匹配的文档' : '暂无关联文档，可先到知识文档页面上传岗位资料。' }}</div></div></div>
               </div>
               <div class="jobs-right">
                 <div class="job-chat-card">
@@ -1162,6 +1699,10 @@
                         <div class="job-chat-msg-content">
                           <div class="job-chat-msg-name">{{ msg.role === 'user' ? (user.display_name || user.username) : (selectedJob.name + '助手') }}</div>
                           <div class="job-chat-msg-bubble" v-html="formatMessage(msg.content)"></div>
+                          <div v-if="msg.role !== 'user'" class="msg-actions">
+                            <button class="msg-action-btn" title="复制" @click="copyText(msg.content)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                            <button class="msg-action-btn" :class="{active: msg.isReading}" title="朗读" @click="toggleRead(msg)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg></button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1184,30 +1725,31 @@
         <template v-else-if="currentPage === 'graph'">
           <div class="graph-page">
             <aside class="graph-left">
-              <div class="graph-search">
-                <input v-model.trim="graphSearchKeyword" placeholder="搜索岗位、技能、文档" @keydown.enter="searchGraph" />
-                <button class="primary" @click="searchGraph">搜索</button>
-              </div>
-              <div v-if="graphSearchResults.length">
-                <div class="notice" style="margin-bottom:8px;">搜索结果</div>
-                <div v-for="item in graphSearchResults" :key="item.id" class="graph-result" @click="selectGraphNode(item.id)">
-                  <b>{{ item.label }}</b><div class="notice">{{ item.type }}</div>
+              <div class="graph-search-panel">
+                <div class="graph-search">
+                  <input v-model.trim="graphSearchKeyword" placeholder="输入岗位、技能、文档关键词" @keydown.enter="searchGraph" />
+                  <button class="primary" @click="searchGraph">匹配</button>
+                </div>
+                <div class="graph-filter-container">
+                  <div ref="graphFilterRow" class="graph-filter-row" :class="{expanded: isFilterExpanded}" @wheel.prevent="handleFilterScroll">
+                    <button class="graph-filter-chip" :class="{active: !graphCategory}" @click="filterGraph('')">全部</button>
+                    <button v-for="cat in graphCategories" :key="cat.key" class="graph-filter-chip" :class="{active: graphCategory === cat.key}" @click="filterGraph(cat.key)">{{ cat.name }}</button>
+                  </div>
+                  <button class="graph-filter-expand" @click="toggleFilterExpand">{{ isFilterExpanded ? '收起' : '展开' }}</button>
                 </div>
               </div>
-              <div class="graph-category" v-for="cat in graphCategories" :key="cat.key">
-                <button class="graph-category-title" :class="{active: graphCategory === cat.key}" @click="filterGraph(cat.key)">
-                  <span>{{ cat.name }}</span><span>{{ cat.entity_count || 0 }}</span>
-                </button>
-                <div class="graph-category-body">
-                  <div>{{ cat.work }}</div>
-                  <div>核心技能：{{ cat.skills }}</div>
+              <div class="graph-result-list">
+                <div class="notice">{{ graphSearchKeyword ? '匹配结果' : '当前图谱内容' }}</div>
+                <div v-for="item in graphVisibleResults" :key="item.id" class="graph-result" :class="{active: graphSelectedNode && graphSelectedNode.id === item.id}" @click="selectGraphNode(item.id)">
+                  <b>{{ item.label }}</b>
+                  <div class="notice">{{ item.type }}<span v-if="item.properties && item.properties.source"> · {{ item.properties.source }}</span></div>
+                  <div class="graph-result-snippet">{{ graphSnippet(item) }}</div>
                 </div>
+                <div v-if="graphVisibleResults.length === 0" class="graph-empty">输入关键词后，相关文章、岗位和技能会在这里出现。</div>
               </div>
             </aside>
             <section class="graph-center">
               <div class="graph-toolbar">
-                <button class="ghost" @click="filterGraph('')">全部</button>
-                <button class="ghost" @click="loadGraph">刷新</button>
                 <span class="notice">{{ graphStatus }}</span>
               </div>
               <div ref="graphCanvas" class="graph-canvas"></div>
@@ -1215,17 +1757,22 @@
             <aside class="graph-right">
               <div v-if="!graphSelectedNode" class="graph-empty">点击图谱节点查看详情</div>
               <div v-else>
-                <div class="graph-node-title">{{ graphSelectedNode.label }}</div>
-                <span class="graph-node-type">{{ graphSelectedNode.type }}</span>
+                <div class="graph-node-header">
+                  <div class="graph-node-title">{{ graphSelectedNode.label }}</div>
+                  <span class="graph-node-type">{{ formatNodeType(graphSelectedNode.type, graphSelectedNode.properties) }}</span>
+                </div>
                 <div class="graph-props">
-                  <div class="graph-prop" v-for="(value,key) in graphSelectedNode.properties" :key="key">
-                    <div class="graph-prop-key">{{ key }}</div><div class="graph-prop-value">{{ value }}</div>
+                  <div class="graph-prop" v-for="(value,key) in filteredProps(graphSelectedNode.properties)" :key="key">
+                    <div class="graph-prop-key">{{ formatPropKey(key) }}</div><div class="graph-prop-value">{{ formatPropValue(value, key) }}</div>
                   </div>
                 </div>
-                <button class="primary upload-btn" @click="askFromGraphNode">从节点发起问答</button>
-                <h3 style="margin-top:18px;">一跳关联</h3>
-                <div v-for="rel in graphRelations" :key="rel.id" class="graph-relation" @click="selectGraphNode(rel.node.id)">
-                  <b>{{ rel.node.label }}</b><div class="notice">{{ rel.type }} · {{ rel.node.type }}</div>
+                <div class="graph-relation-section">
+                  <h3>一跳关联</h3>
+                  <div class="graph-relation-list">
+                    <div v-for="rel in graphRelations" :key="rel.id" class="graph-relation" @click="selectGraphNode(rel.node.id)">
+                      <b>{{ rel.node.label }}</b><div class="notice">{{ rel.type }} · {{ formatNodeType(rel.node.type, rel.node.properties) }}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </aside>
@@ -1234,13 +1781,13 @@
 
         <template v-else-if="currentPage === 'chat'">
           <div class="chat-layout">
-            <aside class="chat-sidebar"><div class="history-section"><h3>历史对话</h3><div class="history-list"><div v-for="session in sessions" :key="session.session_id" class="history-item" :class="{active: sessionId === session.session_id}" @click="openChatWithSession(session.session_id)"><div class="chat-icon"><img :src="aiAvatar" alt="" /></div><div class="chat-info"><div class="chat-title">{{ session.last_question }}</div><div class="chat-time">{{ formatTime(session.created_at) }}</div></div><button class="delete-btn" @click.stop="deleteSession(session.session_id)">删除</button></div><div v-if="sessions.length===0" class="notice" style="padding:14px;">暂无历史对话</div></div></div></aside>
-            <div class="chat-main"><header class="chat-header"><h2>{{ currentSessionTitle }}</h2></header><div v-if="messages.length===0" class="chat-empty"><div><div class="empty-icon"><img :src="aiAvatar" alt="" /></div><h2>开始对话</h2><p class="notice">有什么求职问题都可以问，我会结合知识库给出答案和来源。</p><div class="quick-questions"><div v-for="item in quickQuestions" :key="item" class="quick-question" @click="sendQuick(item)">{{ item }}</div></div></div></div><div v-else class="chat-body" ref="chatBox"><message-row v-for="(item,index) in messages" :key="index" :item="item" :user="user" :avatar-text="avatarText" :ai-avatar="aiAvatar" :format-message="formatMessage"></message-row></div><chat-composer :question="question" :loading="loading" :listening="listening" @update:question="question=$event" @send="send" @stop="stopChat" @voice="toggleVoice" @upload="triggerChatUpload"></chat-composer><input id="chat-file-input" type="file" multiple accept=".pdf,.txt,.md" style="display:none" @change="onChatFileChange" /></div>
+            <aside class="chat-sidebar"><div class="history-section"><h3>历史对话</h3><div class="history-list"><div class="history-item new-chat-item" :class="{active: !sessionId}" @click="newChat"><div class="chat-icon new-chat-mark">✎</div><div class="chat-info"><div class="chat-title">新对话</div></div></div><div v-for="session in chatSessions" :key="session.session_id" class="history-item" :class="{active: sessionId === session.session_id}" @click="openChatWithSession(session.session_id)" @contextmenu.prevent="openContextMenu($event, session)"><div class="chat-icon"><span class="history-glyph" aria-hidden="true"></span></div><div class="chat-info"><div class="chat-title">{{ session.last_question }}</div><div class="chat-time">{{ formatTime(session.created_at) }}</div></div><button class="delete-btn" @click.stop="deleteSession(session.session_id)">✕</button></div><div v-if="chatSessions.length===0" class="notice" style="padding:14px;">暂无知识问答历史</div></div></div></aside>
+            <div class="chat-main"><header class="chat-header"><h2>{{ currentSessionTitle }}</h2></header><div v-if="messages.length===0" class="chat-empty"><div><div class="empty-icon"><img :src="aiAvatar" alt="" /></div><h2>开始对话</h2><p class="notice">有什么求职问题都可以问，我会结合知识库给出答案和来源。</p><div class="quick-questions"><div v-for="item in quickQuestions" :key="item" class="quick-question" @click="sendQuick(item)">{{ item }}</div></div></div></div><div v-else class="chat-body" ref="chatBox"><message-row v-for="(item,index) in messages" :key="index" :item="item" :user="user" :avatar-text="avatarText" :ai-avatar="aiAvatar" :format-message="formatMessage" :speech-text="speechText"></message-row></div><chat-composer :question="question" :loading="loading" :listening="listening" @update:question="question=$event" @send="send" @stop="stopChat" @voice="toggleVoice" @upload="triggerChatUpload"></chat-composer><input id="chat-file-input" type="file" multiple accept=".pdf,.txt,.md" style="display:none" @change="onChatFileChange" /></div>
           </div>
         </template>
 
         <template v-else-if="currentPage === 'interview'">
-          <div class="chat-main" style="flex:1;min-height:0"><header class="chat-header"><h2>模拟面试</h2><button class="ghost" @click="startInterview">重新开始</button></header><div class="chat-body" ref="interviewBox"><message-row v-for="(item,index) in interviewMessages" :key="index" :item="item" :user="user" :avatar-text="avatarText" :ai-avatar="aiAvatar" :format-message="formatMessage"></message-row></div><chat-composer :question="interviewAnswer" :loading="interviewLoading" :listening="listening" placeholder="输入你的回答，AI 考官会继续追问" @update:question="interviewAnswer=$event" @send="sendInterviewAnswer" @stop="stopInterview" @voice="toggleVoice" @upload="triggerChatUpload"></chat-composer></div>
+          <div class="chat-main" style="flex:1;min-height:0"><header class="chat-header"><h2>模拟面试</h2><button class="ghost interview-restart" :disabled="interviewLoading" title="重新开始模拟面试" @click="startInterview"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg><span>重新开始</span></button></header><div class="interview-config"><label>面试官背景</label><select v-model="interviewProfileKey" @change="startInterview"><option v-for="profile in interviewProfiles" :key="profile.key" :value="profile.key">{{ profile.name }}</option></select><input v-model.trim="interviewCustomBackground" placeholder="可补充：例如 5 年经验 Java 后端面试官，偏项目深挖" @change="startInterview" /></div><div class="chat-body" ref="interviewBox"><message-row v-for="(item,index) in interviewMessages" :key="index" :item="item" :user="user" :avatar-text="avatarText" :ai-avatar="aiAvatar" :format-message="formatMessage" :speech-text="speechText"></message-row></div><chat-composer :question="interviewAnswer" :loading="interviewLoading" :listening="listening" placeholder="输入你的回答，AI 考官会继续追问" @update:question="interviewAnswer=$event" @send="sendInterviewAnswer" @stop="stopInterview" @voice="toggleVoice" @upload="triggerChatUpload"></chat-composer></div>
         </template>
 
         <template v-else-if="currentPage === 'docs'">
@@ -1248,19 +1795,21 @@
             <div class="page-header"><h2>知识文档</h2><div class="search-bar"><input class="search-input" v-model.trim="docsSearchQuery" placeholder="搜索文档名称" @keydown.enter="reloadDocuments" /><button class="primary" @click="reloadDocuments">搜索</button></div></div>
             <div class="category-tabs"><button v-for="cat in categories" :key="cat.key" class="category-tab" :class="{active: docCategory===cat.key}" @click="setDocCategory(cat.key)">{{ cat.label }} {{ cat.count }}</button></div>
             <div class="docs-layout">
-              <div class="card"><h3>上传知识文档</h3><p class="notice">支持 PDF、TXT、Markdown。上传后系统会解析并重建索引。</p><input id="docs-file-input" type="file" multiple accept=".pdf,.txt,.md" style="display:none" @change="onFileChange" /><div class="upload-area" @click="selectUploadFiles"><div style="font-size:28px;margin-bottom:8px;">文件</div><div>{{ selectedFiles.length ? '已选择 ' + selectedFiles.length + ' 个文件' : '点击选择文件' }}</div></div><button class="primary upload-btn" :disabled="uploading || selectedFiles.length===0" @click="uploadFiles">{{ uploading ? '解析入库中...' : '解析并入库' }}</button><div class="error" v-if="error">{{ error }}</div></div>
-              <div class="card reader"><div class="card-head"><h3>{{ selectedDoc ? selectedDoc.filename : '当前知识库文档' }}</h3><span class="notice">{{ totalDocs }} 个文件</span></div><div class="doc-list" v-if="!selectedDoc"><div v-for="doc in documents" :key="doc.id" class="doc-item" @click="openDocument(doc)"><b>{{ doc.filename }}</b><div class="doc-meta"><span>{{ categoryLabel(doc.category) }}</span><span>{{ formatSize(doc.size) }}</span><span>{{ doc.chunk_count }} 个文本块</span></div><div class="doc-actions"><button class="ghost" @click.stop="quickQuestion(doc)">快速提问</button><button class="danger" @click.stop="deleteDocument(doc.id)">删除</button></div></div><div v-if="documents.length===0" class="notice">暂无知识文档</div></div><div v-else class="reader-content">{{ selectedDoc.content || '正在读取文档...' }}</div><div class="pagination" v-if="!selectedDoc && totalPages>1"><button :disabled="docPage===1" @click="goDocPage(docPage-1)">上一页</button><button v-for="page in totalPages" :key="page" :class="{active:docPage===page}" @click="goDocPage(page)">{{ page }}</button><button :disabled="docPage===totalPages" @click="goDocPage(docPage+1)">下一页</button></div><button v-if="selectedDoc" class="ghost upload-btn" @click="selectedDoc=null">返回文档列表</button></div>
+              <div class="card"><h3>批量上传</h3><p class="notice">支持 PDF、TXT、Markdown、DOCX、XLSX。可多选，也可以直接拖入文件。</p><input id="docs-file-input" type="file" multiple accept=".pdf,.txt,.md,.markdown,.docx,.xlsx" style="display:none" @change="onFileChange" /><div class="upload-area" :class="{dragging: uploadDragging}" @click="selectUploadFiles" @dragover.prevent="uploadDragging=true" @dragleave.prevent="uploadDragging=false" @drop.prevent="onFileDrop"><div style="font-size:28px;margin-bottom:8px;">文件</div><div>{{ selectedFiles.length ? '已加入 ' + selectedFiles.length + ' 个文件' : '点击选择，或把文件拖到这里' }}</div><div class="notice">上传后会自动解析、分类并更新知识图谱</div></div><div class="upload-queue" v-if="selectedFiles.length"><div class="upload-file" v-for="(file,index) in selectedFiles" :key="file.name + file.size"><span class="upload-file-name">{{ file.name }}</span><span class="notice">{{ formatSize(file.size) }}</span><button class="ghost" @click="removeUploadFile(index)">移除</button></div></div><button class="primary upload-btn" :disabled="uploading || selectedFiles.length===0" @click="uploadFiles">{{ uploading ? '解析入库中...' : '批量解析入库' }}</button><div class="error" v-if="error">{{ error }}</div></div>
+              <div class="card reader"><div class="card-head"><h3>{{ selectedDoc ? selectedDoc.filename : '当前知识库文档' }}</h3><span class="notice">{{ totalDocs }} 个文件</span></div><div class="doc-list" v-if="!selectedDoc"><div v-for="doc in documents" :key="doc.id" class="doc-item" @click="openDocument(doc)"><b>{{ doc.filename }}</b><div class="doc-meta"><span>{{ categoryLabel(doc.category) }}</span><span>{{ formatSize(doc.size) }}</span><span>{{ doc.chunk_count }} 个文本块</span></div><div class="doc-actions"><button class="ghost" @click.stop="quickQuestion(doc)">快速提问</button><button class="danger" @click.stop="deleteDocument(doc.id)">删除</button></div></div><div v-if="documents.length===0" class="notice">暂无知识文档</div></div><div v-else class="reader-preview"><iframe class="pdf-frame" :src="documentPreviewUrl(selectedDoc)" title="PDF 阅读预览"></iframe></div><div class="pagination" v-if="!selectedDoc && totalPages>1"><button :disabled="docPage===1" @click="goDocPage(docPage-1)">上一页</button><button v-for="page in totalPages" :key="page" :class="{active:docPage===page}" @click="goDocPage(page)">{{ page }}</button><button :disabled="docPage===totalPages" @click="goDocPage(docPage+1)">下一页</button></div><button v-if="selectedDoc" class="ghost upload-btn" @click="selectedDoc=null">返回文档列表</button></div>
             </div>
           </div>
         </template>
 
-        <template v-else-if="currentPage === 'history'"><div class="content"><div class="card"><h3>学习记录</h3><div v-if="sessions.length===0" class="placeholder-page">暂无学习记录</div><div v-else class="history-list"><div v-for="session in sessions" :key="session.session_id" class="history-item" @click="openChatWithSession(session.session_id); currentPage='chat'"><div class="chat-icon"><img :src="aiAvatar" alt="" /></div><div class="chat-info"><div class="chat-title">{{ session.last_question }}</div><div class="chat-time">{{ formatTime(session.created_at) }}</div></div></div></div></div></div></template>
+        <template v-else-if="currentPage === 'history'"><div class="content"><div class="card"><div class="card-head"><h3>学习记录</h3><div class="category-tabs"><button v-for="tab in historyTabs" :key="tab.key" class="category-tab" :class="{active:historyFilter===tab.key}" @click="historyFilter=tab.key">{{ tab.label }}</button></div></div><div v-if="filteredSessions.length===0" class="placeholder-page">暂无学习记录</div><div v-else class="history-list"><div v-for="session in filteredSessions" :key="session.session_id" class="history-item" @click="openChatWithSession(session.session_id); currentPage='chat'" @contextmenu.prevent="openContextMenu($event, session)"><div class="chat-icon"><span class="history-glyph" aria-hidden="true"></span></div><div class="chat-info"><div class="chat-title"><span class="session-type" :class="normalizedSessionType(session)">{{ sessionTypeLabel(normalizedSessionType(session)) }}</span>{{ session.last_question }}</div><div class="chat-time">{{ formatTime(session.created_at) }}</div></div><div class="history-actions"><button class="action-btn" title="重命名" @click.stop="renameSession(session)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button><button class="action-btn danger" title="删除" @click.stop="deleteSession(session.session_id)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button></div></div></div></div></template>
       </main>
     </section>
 
     <div class="modal-overlay" v-if="showProfileModal" @click="showProfileModal=false"><div class="modal" @click.stop><h3>个人资料</h3><div class="avatar-upload-area"><div class="avatar-preview"><img v-if="editProfile.avatar" :src="editProfile.avatar" /><span v-else>{{ avatarText }}</span></div><button class="ghost" @click="selectAvatar">更换头像</button><input id="avatar-input" type="file" accept="image/*" style="display:none" @change="onAvatarChange" /></div><div class="field"><label>昵称</label><input v-model.trim="editProfile.display_name" /></div><div class="field"><label>邮箱</label><input v-model.trim="editProfile.email" /></div><div class="field"><label>手机号</label><input v-model.trim="editProfile.phone" /></div><div class="modal-actions"><button class="ghost" @click="showProfileModal=false">取消</button><button class="primary" @click="saveProfile">保存</button></div></div></div>
     <div class="modal-overlay" v-if="showPasswordModal" @click="showPasswordModal=false"><div class="modal" @click.stop><h3>修改密码</h3><div class="field"><label>原密码</label><input v-model="passwordUpdate.old_password" type="password" /></div><div class="field"><label>新密码</label><input v-model="passwordUpdate.new_password" type="password" /></div><div class="field"><label>确认新密码</label><input v-model="passwordUpdate.confirm_password" type="password" /></div><div class="error" v-if="passwordError">{{ passwordError }}</div><div class="modal-actions"><button class="ghost" @click="showPasswordModal=false">取消</button><button class="primary" @click="savePassword">保存</button></div></div></div>
     <div class="modal-overlay" v-if="showGoalModal" @click="showGoalModal=false"><div class="modal" @click.stop><h3>设置目标</h3><div class="field"><label>目标名称</label><input v-model="newGoal.title" placeholder="例如：秋招截止日期" /></div><div class="field"><label>目标日期</label><input v-model="newGoal.date" type="date" /></div><div class="modal-actions"><button class="ghost" @click="showGoalModal=false">取消</button><button class="primary" @click="addGoal">添加</button></div></div></div>
+    <div class="modal-overlay" v-if="showUploadResultModal" @click="showUploadResultModal=false"><div class="modal upload-result-modal" @click.stop><div class="upload-result-head"><div class="upload-result-icon">✓</div><div><h3 class="upload-result-title">文档解析入库完成</h3><div class="upload-result-subtitle">{{ uploadResultSubtitle() }}</div></div></div><div class="upload-result-grid"><div class="upload-result-stat"><b>{{ uploadResult?.imported || 0 }}</b><span>新增入库</span></div><div class="upload-result-stat"><b>{{ uploadResult?.skipped_duplicates || 0 }}</b><span>重复跳过</span></div><div class="upload-result-stat"><b>{{ uploadResult?.skipped_parse_failed || 0 }}</b><span>解析失败</span></div></div><div class="upload-result-list" v-if="uploadResultRows().length"><div class="upload-result-row" v-for="row in uploadResultRows()" :key="row.name + row.detail"><strong>{{ row.name }}</strong><span>{{ row.detail }}</span></div></div><div class="upload-result-foot">当前文本块：{{ uploadResult?.chunk_count || stats.chunk_count || 0 }} 个；{{ uploadResultNeo4jText() }}</div><div class="modal-actions"><button class="ghost" @click="showUploadResultModal=false">继续上传</button><button class="primary" @click="showUploadResultModal=false">知道了</button></div></div></div>
+    <div class="modal-overlay" v-if="showDocModal" @click="closeDocModal"><div class="doc-preview-modal" @click.stop><div class="doc-preview-header"><h3>{{ previewDoc?.filename }}</h3><button class="ghost close-btn" @click="closeDocModal">✕</button></div><div class="doc-preview-body"><iframe v-if="previewDoc" :src="documentPreviewUrl(previewDoc)" title="文档预览" class="doc-preview-frame"></iframe><div v-else class="notice">文档加载中...</div></div></div></div><div class="modal-overlay" v-if="showRenameModal" @click="showRenameModal=false"><div class="modal" @click.stop><h3>重命名对话</h3><div class="field"><input v-model.trim="renameTitle" placeholder="输入新名称" @keydown.enter="confirmRename" /></div><div class="modal-actions"><button class="ghost" @click="showRenameModal=false">取消</button><button class="primary" @click="confirmRename">保存</button></div></div></div><div class="context-menu" v-if="isContextMenuOpen" :style="{left:contextMenuX+'px', top:contextMenuY+'px'}" @click.stop><div class="context-menu-item" @click="contextRename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg><span>重命名</span></div><div class="context-menu-item" @click="contextDelete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg><span>删除</span></div></div>
   </div>
 
   <script>
@@ -1268,8 +1817,23 @@
       document.body.innerHTML = '<div style="padding:40px;font-family:Microsoft YaHei">Vue 加载失败，请检查 frontend/vendor/vue.global.prod.js。</div>';
     } else {
       const MessageRow = {
-        props: ['item', 'user', 'avatarText', 'aiAvatar', 'formatMessage'],
-        template: `<div class="msg" :class="item.role"><div class="avatar"><img v-if="item.role !== 'user'" :src="aiAvatar" /><img v-else-if="user.avatar" :src="user.avatar" /><span v-else>{{ avatarText }}</span></div><div class="msg-content"><div class="msg-name">{{ item.role === 'user' ? (user.display_name || user.username) : (item.role === 'interviewer' ? 'AI 面试官' : '求职问答助手') }}</div><div class="bubble"><div v-html="formatMessage(item.content)"></div><div class="sources" v-if="item.sources && item.sources.length"><div class="source-card" v-for="source in item.sources" :key="source.chunk_id"><b>{{ source.title || source.source }}</b> · 相似度 {{ source.score }}<div>{{ source.content }}</div></div></div></div><div class="thinking" v-if="item.thinking">thinking<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div></div></div>`
+        props: ['item', 'user', 'avatarText', 'aiAvatar', 'formatMessage', 'speechText'],
+        data() { return { isReading: false, expandedSources: false }; },
+        methods: {
+          copyText() { navigator.clipboard.writeText(this.item.content).then(() => {}).catch(() => {}); },
+          readText() { if ('speechSynthesis' in window) { if (this.isReading) { window.speechSynthesis.cancel(); this.isReading = false; return; } window.speechSynthesis.cancel(); const text = this.speechText ? this.speechText(this.displayContent()) : this.displayContent(); if (!text) return; const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'zh-CN'; utterance.onend = () => { this.isReading = false; }; this.isReading = true; window.speechSynthesis.speak(utterance); } },
+          regenerate() { this.$emit('regenerate', this.item); },
+          parsedReferenceSources() {
+            const text = this.item.content || '';
+            const match = text.match(/\n\s*参考来源[：:]\s*([^\n]+)\s*$/);
+            if (!match) return [];
+            return match[1].split(/[、,，]/).map((name, index) => name.trim()).filter(Boolean).map((name, index) => ({ chunk_id: 'ref-' + index + '-' + name, title: name, source: name, score: '-', content: '该来源来自回答末尾的参考文献列表。' }));
+          },
+          displaySources() { return (this.item.sources && this.item.sources.length) ? this.item.sources : this.parsedReferenceSources(); },
+          displayContent() { return (this.item.content || '').replace(/\n\s*参考来源[：:]\s*[^\n]+\s*$/, ''); },
+          visibleSources(sources) { return this.expandedSources ? sources : (sources || []).slice(0, 1); }
+        },
+        template: `<div class="msg" :class="item.role"><div class="avatar"><img v-if="item.role !== 'user'" :src="aiAvatar" /><img v-else-if="user.avatar" :src="user.avatar" /><span v-else>{{ avatarText }}</span></div><div class="msg-content"><div class="msg-name">{{ item.role === 'user' ? (user.display_name || user.username) : (item.role === 'interviewer' ? 'AI 面试官' : '求职问答助手') }}</div><div class="bubble" v-if="item.content || displaySources().length"><div v-html="formatMessage(displayContent())"></div><div class="sources" v-if="displaySources().length"><div class="sources-head"><span>相关资料（默认显示 1 篇）</span><button v-if="displaySources().length > 1" class="sources-toggle" @click="expandedSources = !expandedSources">{{ expandedSources ? '收起' : '展开全部 ' + displaySources().length + ' 篇' }}</button></div><div class="source-card" v-for="source in visibleSources(displaySources())" :key="source.chunk_id"><b>{{ source.title || source.source }}</b><span v-if="source.score !== '-'"> · 相似度 {{ source.score }}</span><div>{{ source.content }}</div></div></div></div><div class="thinking" v-if="item.thinking">{{ item.status || '正在生成回答' }}<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div><div class="msg-actions" v-if="item.role !== 'user' && !item.thinking && item.content"><button class="msg-action-btn" title="复制" @click="copyText"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="msg-action-btn" title="朗读" @click="readText"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg></button><button class="msg-action-btn" title="重新生成" @click="regenerate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg></button></div></div></div>`
       };
       const ChatComposer = {
         props: { question: String, loading: Boolean, listening: Boolean, placeholder: { type: String, default: '请输入你的求职问题，Enter 发送' } },
@@ -1293,12 +1857,15 @@
           return {
             token: localStorage.getItem('rag_token') || '',
             user: JSON.parse(localStorage.getItem('rag_user') || 'null') || {},
-            currentPage: 'home',
+            currentPage: '',
             isDark: localStorage.getItem('rag_dark') === 'true',
+            sidebarCollapsed: localStorage.getItem('rag_sidebar_collapsed') === 'true',
             showUserMenu: false,
             showProfileModal: false,
             showPasswordModal: false,
             showGoalModal: false,
+            showUploadResultModal: false,
+            uploadResult: null,
             goals: [],
             newGoal: { title: '', date: '' },
             jobMessages: [],
@@ -1317,6 +1884,7 @@
             stats: {},
             sessions: [],
             uploading: false,
+            uploadDragging: false,
             selectedFiles: [],
             documents: [],
             categories: [{ key: 'all', label: '全部', count: 0 }],
@@ -1328,6 +1896,8 @@
             selectedDoc: null,
             selectedJob: null,
             graphChart: null,
+            graphResizeObserver: null,
+            graphResizeFrame: 0,
             graphCategory: '',
             graphCategories: [],
             graphNodes: [],
@@ -1342,13 +1912,32 @@
             statusText: '本地知识库已连接',
             listening: false,
             recognition: null,
-            interviewMessages: [],
+            mediaRecorder: null,
+            recordedChunks: [],
+            speechSocket: null,
+            voiceTarget: 'chat',
+            jobMediaRecorder: null,
+            jobRecordedChunks: [],
+            jobSpeechSocket: null,
+            interviewMessages: [], interviewSessionId: '',
             interviewAnswer: '',
             interviewLoading: false,
             interviewAbortController: null,
+            interviewProfileKey: 'backend',
+            interviewCustomBackground: '',
+            interviewProfiles: [
+              { key: 'backend', name: '后端开发面试官', role: '后端开发岗位面试官，重点考察 Java/Python/Go、数据库、缓存、接口设计、并发、项目架构和线上问题定位。' },
+              { key: 'frontend', name: '前端开发面试官', role: '前端开发岗位面试官，重点考察 HTML/CSS/JS、Vue/React、工程化、性能优化、组件设计和用户体验。' },
+              { key: 'ai', name: 'AI 算法面试官', role: 'AI 算法岗位面试官，重点考察机器学习、深度学习、数据处理、模型评估、项目落地和论文/竞赛经历。' },
+              { key: 'product', name: '产品运营面试官', role: '产品运营岗位面试官，重点考察用户洞察、需求分析、数据复盘、活动策划、沟通协作和业务理解。' },
+              { key: 'general', name: '通用 HR 面试官', role: '校园招聘 HR 面试官，重点考察自我介绍、求职动机、稳定性、沟通表达、团队协作和职业规划。' }
+            ],
             aiAvatar: '/photos/ai_avatar.jpg',
             editProfile: { display_name: '', email: '', phone: '', avatar: '' },
             passwordUpdate: { old_password: '', new_password: '', confirm_password: '' },
+            jobDocSearch: '',
+            showDocModal: false, showRenameModal: false, renameSessionId: '', renameTitle: '', isContextMenuOpen: false, contextMenuX: 0, contextMenuY: 0, contextSession: null, _contextMenuClick: false,
+            previewDoc: null,
             navs: [
               { key: 'home', name: '首页', icon: '⌂' },
               { key: 'jobs', name: '岗位选择', icon: '▣' },
@@ -1363,39 +1952,70 @@
             jobs: [
               { key: 'backend', name: '后端开发工程师', type: '技术岗', icon: '</>', color: '#16c79a', questions: ['后端开发工程师需要准备哪些能力？', '后端开发简历项目经历怎么写？', '后端面试常问哪些数据库问题？'] },
               { key: 'frontend', name: '前端开发工程师', type: '技术岗', icon: '□', color: '#4088ff', questions: ['前端开发工程师简历怎么写？', 'Vue 项目怎么包装成求职亮点？', '前端面试如何讲性能优化？'] },
-              { key: 'product', name: '产品经理', type: '产品岗', icon: '◇', color: '#865dff', questions: ['产品经理岗位面试重点是什么？', '产品经理简历怎么写项目经历？', '没有产品实习怎么准备作品集？'] },
-              { key: 'algorithm', name: '算法工程师', type: '技术岗', icon: '⌁', color: '#ff914d', questions: ['算法工程师应届生如何准备？', '算法岗位项目怎么写进简历？', '机器学习面试怎么复习？'] },
-              { key: 'testing', name: '测试工程师', type: '技术岗', icon: '✓', color: '#2dd4bf', questions: ['测试工程师需要掌握哪些技能？', '自动化测试项目怎么描述？', '测试岗位面试常问什么？'] },
-              { key: 'data', name: '数据分析师', type: '数据岗', icon: '▥', color: '#ec4899', questions: ['数据分析师简历项目怎么写？', 'SQL 面试怎么准备？', '数据分析岗位需要哪些作品？'] },
-              { key: 'ops', name: '运维工程师', type: '技术岗', icon: '⚙', color: '#f59e0b', questions: ['运维工程师面试常见问题有哪些？', 'Linux 和 Docker 怎么准备？', '部署项目怎么写进简历？'] },
-              { key: 'design', name: 'UI 设计师', type: '设计岗', icon: '✎', color: '#8b5cf6', questions: ['UI 设计师作品集怎么准备？', '交互设计面试怎么讲项目？', '设计岗位简历怎么突出优势？'] }
-            ]
+              { key: 'product', categoryKey: 'nondev', name: '产品经理', type: '产品岗', icon: '◇', color: '#865dff', questions: ['产品经理岗位面试重点是什么？', '产品经理简历怎么写项目经历？', '没有产品实习怎么准备作品集？'] },
+              { key: 'algorithm', categoryKey: 'ai', name: '算法工程师', type: '技术岗', icon: '⌁', color: '#ff914d', questions: ['算法工程师应届生如何准备？', '算法岗位项目怎么写进简历？', '机器学习面试怎么复习？'] },
+              { key: 'testing', categoryKey: 'testing', name: '测试工程师', type: '技术岗', icon: '✓', color: '#2dd4bf', questions: ['测试工程师需要掌握哪些技能？', '自动化测试项目怎么描述？', '测试岗位面试常问什么？'] },
+              { key: 'data', categoryKey: 'bigdata', name: '数据分析师', type: '数据岗', icon: '▥', color: '#ec4899', questions: ['数据分析师简历项目怎么写？', 'SQL 面试怎么准备？', '数据分析岗位需要哪些作品？'] },
+              { key: 'ops', categoryKey: 'cloud', name: '运维工程师', type: '技术岗', icon: '⚙', color: '#f59e0b', questions: ['运维工程师面试常见问题有哪些？', 'Linux 和 Docker 怎么准备？', '部署项目怎么写进简历？'] },
+              { key: 'design', categoryKey: 'nondev', name: 'UI 设计师', type: '设计岗', icon: '✎', color: '#8b5cf6', questions: ['UI 设计师作品集怎么准备？', '交互设计面试怎么讲项目？', '设计岗位简历怎么突出优势？'] },
+              { key: 'other', name: '其他岗位', type: '综合岗', icon: '⊕', color: '#6b7280', questions: ['其他岗位有哪些选择？', '通用求职技巧有哪些？', '跨专业求职怎么准备？'] }
+            ],
+            isFilterExpanded: false,
+            historyFilter: 'all',
+            historyTabs: [{ key: 'all', label: '全部' }, { key: 'chat', label: '知识问答' }, { key: 'interview', label: '模拟面试' }, { key: 'job', label: '岗位助手' }]
           };
         },
         computed: {
+          chatSessions() { return this.sessions.filter(s => this.normalizedSessionType(s) === 'chat'); },
+          filteredSessions() { if (this.historyFilter === 'all') return this.sessions; return this.sessions.filter(s => this.normalizedSessionType(s) === this.historyFilter); },
           pageTitle() { const item = this.navs.find(nav => nav.key === this.currentPage); return item ? item.name : '首页'; },
           avatarText() { return (this.user.display_name || this.user.username || '我').slice(0, 1); },
           currentSessionTitle() { const s = this.sessions.find(item => item.session_id === this.sessionId); return s ? (s.last_question.length > 26 ? s.last_question.slice(0, 26) + '...' : s.last_question) : '新对话'; },
           totalPages() { return Math.max(Math.ceil(this.totalDocs / this.pageSize), 1); },
-          relatedJobDocs() { if (!this.selectedJob) return []; return this.documents.filter(doc => doc.category === this.selectedJob.key); }
+          relatedJobDocs() { if (!this.selectedJob) return []; const categoryKey = this.selectedJob.categoryKey || this.selectedJob.key; if (categoryKey === 'other') { const jobCategories = new Set(this.jobs.filter(j => j.key !== 'other').map(j => j.categoryKey || j.key)); const uncategorized = this.documents.filter(doc => !jobCategories.has(doc.category)); return uncategorized.length ? uncategorized : this.documents; } const exact = this.documents.filter(doc => doc.category === categoryKey); return exact.length ? exact : this.documents; },
+          filteredRelatedJobDocs() { if (!this.jobDocSearch.trim()) return this.relatedJobDocs; const keyword = this.jobDocSearch.toLowerCase(); return this.relatedJobDocs.filter(doc => doc.filename.toLowerCase().includes(keyword)); },
+          graphVisibleResults() {
+            const rows = this.graphSearchResults.length ? this.graphSearchResults : this.graphNodes;
+            const priority = { Document: 0, Position: 1, Skill: 2, JobCategory: 3 };
+            return rows
+              .filter(item => item && item.type !== 'Chunk')
+              .slice()
+              .sort((a, b) => (priority[a.type] ?? 9) - (priority[b.type] ?? 9))
+              .slice(0, 28);
+          }
         },
         mounted() {
           document.addEventListener('click', this.closeUserMenu);
+          document.addEventListener('click', this.closeContextMenu);
           this.applyDark();
+          this.currentPage = location.hash.slice(1) || 'home';
+          window.addEventListener('hashchange', this.onHashChange);
           if (this.token) this.bootstrap();
         },
-        beforeUnmount() { document.removeEventListener('click', this.closeUserMenu); },
+        beforeUnmount() {
+          document.removeEventListener('click', this.closeUserMenu);
+          document.removeEventListener('click', this.closeContextMenu);
+          window.removeEventListener('hashchange', this.onHashChange);
+          if (this.graphResizeObserver) this.graphResizeObserver.disconnect();
+          if (this.graphResizeFrame) cancelAnimationFrame(this.graphResizeFrame);
+        },
         methods: {
           closeUserMenu() { this.showUserMenu = false; },
           applyDark() { document.body.classList.toggle('dark', this.isDark); },
           toggleDark() { this.isDark = !this.isDark; localStorage.setItem('rag_dark', this.isDark); this.applyDark(); },
-          changePage(page) { this.currentPage = page; this.showUserMenu = false; if (page === 'docs' || page === 'jobs') { this.loadCategories(); this.loadDocuments(); } if (page === 'graph') this.$nextTick(() => this.loadGraph()); if (page === 'history' || page === 'chat') this.loadSessions(); if (page === 'interview' && this.interviewMessages.length === 0) this.startInterview(); },
+          toggleSidebar() {
+            this.sidebarCollapsed = !this.sidebarCollapsed;
+            localStorage.setItem('rag_sidebar_collapsed', this.sidebarCollapsed);
+            this.resizeGraphChart(true);
+          },
+          changePage(page) { location.hash = page; },
+          onHashChange() { const page = location.hash.slice(1) || 'home'; this.currentPage = page; this.showUserMenu = false; if (page === 'docs' || page === 'jobs') { this.loadCategories(); this.loadDocuments(); } if (page === 'graph') this.$nextTick(() => this.loadGraph()); if (page === 'history' || page === 'chat') this.loadSessions(); if (page === 'interview' && this.interviewMessages.length === 0) this.startInterview(); },
           async bootstrap() { await this.loadMe(); await Promise.all([this.loadStats(), this.loadSessions(), this.loadCategories(), this.loadDocuments(), this.loadGoals()]); if (!this.selectedJob) this.selectedJob = this.jobs[0]; },
           headers(extra) { return Object.assign({}, extra || {}, { Authorization: 'Bearer ' + this.token }); },
-          async api(path, options) { options = options || {}; const response = await fetch(path, Object.assign({}, options, { headers: this.headers(options.headers || {}) })); const data = await response.json(); if (!response.ok || data.code !== 0) throw new Error(data.detail || data.message || '请求失败'); return data.data; },
-          async submitAuth() { this.authLoading = true; this.error = ''; try { const path = this.authMode === 'login' ? '/api/auth/login' : '/api/auth/register'; const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.auth) }); const data = await response.json(); if (!response.ok || data.code !== 0) throw new Error(data.detail || data.message || '认证失败'); this.token = data.data.token; this.user = data.data.user; localStorage.setItem('rag_token', this.token); localStorage.setItem('rag_user', JSON.stringify(this.user)); await this.bootstrap(); } catch (err) { this.error = err.message; } finally { this.authLoading = false; } },
+          async api(path, options) { options = options || {}; const isForm = options.body instanceof FormData; const defaultHeaders = isForm ? {} : { 'Content-Type': 'application/json' }; const response = await fetch(path, Object.assign({}, options, { headers: this.headers(Object.assign({}, defaultHeaders, options.headers || {})) })); const text = await response.text(); let data = {}; try { data = text ? JSON.parse(text) : {}; } catch (err) { throw new Error(text ? text.slice(0, 160) : '响应不是有效 JSON'); } if (!response.ok || data.code !== 0) throw new Error(data.detail || data.message || '请求失败'); return data.data; },
+          async submitAuth() { this.authLoading = true; this.error = ''; try { const path = this.authMode === 'login' ? '/api/auth/login' : '/api/auth/register'; const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.auth) }); const data = await response.json(); if (!response.ok || data.code !== 0) throw new Error(data.detail || data.message || '认证失败'); this.token = data.data.token; this.user = data.data.user; localStorage.setItem('rag_token', this.token); localStorage.setItem('rag_user', JSON.stringify(this.user)); await this.bootstrap(); } catch (err) { let msg = err.message; if (msg && (msg.includes('Invalid username') || msg.includes('Wrong username'))) msg = '用户名或密码错误'; this.error = msg; } finally { this.authLoading = false; } },
           async loadMe() { try { const data = await this.api('/api/auth/me'); this.user = data.user; localStorage.setItem('rag_user', JSON.stringify(this.user)); } catch (err) { this.logout(false); } },
-          async logout(callApi) { if (callApi !== false) { try { await this.api('/api/auth/logout', { method: 'POST' }); } catch (err) {} } localStorage.removeItem('rag_token'); localStorage.removeItem('rag_user'); this.token = ''; this.user = {}; this.messages = []; this.sessionId = ''; },
+          async logout(callApi) { if (callApi !== false) { try { await this.api('/api/auth/logout', { method: 'POST' }); } catch (err) {} } localStorage.removeItem('rag_token'); localStorage.removeItem('rag_user'); this.token = ''; this.user = {}; this.messages = []; this.sessions = []; this.sessionId = ''; this.question = ''; },
           async loadStats() { try { this.stats = await this.api('/api/knowledge/stats'); } catch (err) { this.error = err.message; } },
           async loadSessions() { try { const data = await this.api('/api/sessions'); this.sessions = data.sessions || []; } catch (err) { this.error = err.message; } },
           async loadCategories() { try { const data = await this.api('/api/knowledge/categories'); this.categories = data.categories || this.categories; } catch (err) {} },
@@ -1409,6 +2029,7 @@
               this.graphCategories = categoryData.categories || [];
               this.graphNodes = graphData.nodes || [];
               this.graphEdges = graphData.edges || [];
+              if (!this.graphSearchKeyword) this.graphSearchResults = [];
               this.graphStatus = graphData.neo4j_enabled ? `${this.graphNodes.length} 节点 / ${this.graphEdges.length} 关系` : 'Neo4j 未连接，展示分类骨架';
               this.renderGraph();
             } catch (err) {
@@ -1422,6 +2043,42 @@
             this.graphRelations = [];
             this.loadGraph();
           },
+          handleFilterScroll(e) {
+            const container = e.currentTarget;
+            container.scrollLeft += e.deltaY;
+          },
+          toggleFilterExpand() {
+            this.isFilterExpanded = !this.isFilterExpanded;
+          },
+          setupGraphResizeObserver() {
+            if (!window.ResizeObserver || !this.$refs.graphCanvas) return;
+            if (this.graphResizeObserver) this.graphResizeObserver.disconnect();
+            this.graphResizeObserver = new ResizeObserver(() => this.resizeGraphChart(false));
+            this.graphResizeObserver.observe(this.$refs.graphCanvas);
+            if (this.$refs.graphCanvas.parentElement) this.graphResizeObserver.observe(this.$refs.graphCanvas.parentElement);
+          },
+          resizeGraphChart(relayout) {
+            if (!this.graphChart) return;
+            const resizeAndRelayout = () => {
+              const canvas = this.$refs.graphCanvas;
+              if (!this.graphChart || !canvas) return;
+              const rect = canvas.getBoundingClientRect();
+              if (rect.width > 0 && rect.height > 0) {
+                this.graphChart.resize({ width: Math.round(rect.width), height: Math.round(rect.height) });
+              } else {
+                this.graphChart.resize();
+              }
+              if (relayout && this.currentPage === 'graph') {
+                this.graphChart.clear();
+                this.renderGraph();
+              }
+            };
+            this.$nextTick(() => {
+              if (this.graphResizeFrame) cancelAnimationFrame(this.graphResizeFrame);
+              this.graphResizeFrame = requestAnimationFrame(resizeAndRelayout);
+              setTimeout(resizeAndRelayout, 280);
+            });
+          },
           renderGraph() {
             if (!window.echarts || !this.$refs.graphCanvas) {
               this.graphStatus = 'ECharts 未加载';
@@ -1432,37 +2089,92 @@
               this.graphChart.on('click', params => {
                 if (params.dataType === 'node') this.selectGraphNode(params.data.id);
               });
-              window.addEventListener('resize', () => this.graphChart && this.graphChart.resize());
+              window.addEventListener('resize', () => this.resizeGraphChart(false));
+              this.setupGraphResizeObserver();
             }
-            const palette = { JobCategory: '#2563eb', Position: '#16a34a', Skill: '#f59e0b', Document: '#8b5cf6', Chunk: '#64748b' };
+            const palette = { JobCategory: '#4a9b9b', Position: '#6bb3b3', Skill: '#8ccccc', Document: '#a8d5d5', Chunk: '#d4e8e8' };
+            const highlightColor = '#7b4d8e';
             const categories = Object.keys(palette).map(name => ({ name }));
             const nodes = this.graphNodes.map(node => ({
               id: node.id,
               name: node.label,
               value: node.label,
               category: Object.keys(palette).indexOf(node.type) >= 0 ? node.type : 'Chunk',
-              symbolSize: node.type === 'JobCategory' ? 58 : (node.type === 'Document' ? 36 : 30),
-              itemStyle: { color: palette[node.type] || '#64748b' },
-              label: { show: node.type === 'JobCategory', formatter: '{b}' }
+              symbolSize: node.type === 'JobCategory' ? 56 : (node.type === 'Document' ? 38 : (node.type === 'Position' ? 30 : 22)),
+              itemStyle: {
+                color: palette[node.type] || '#d4e8e8',
+                borderColor: 'transparent',
+                borderWidth: 0,
+                opacity: node.type === 'Chunk' ? 0.5 : 0.85
+              },
+              label: { 
+                show: node.type === 'JobCategory' || node.type === 'Document', 
+                formatter: '{b}',
+                color: '#333333',
+                fontSize: 13,
+                fontWeight: 500,
+                textBorderColor: '#ffffff',
+                textBorderWidth: 3,
+                textBorderType: 'solid'
+              }
             }));
-            const links = this.graphEdges.map(edge => ({ source: edge.source, target: edge.target, value: edge.type, label: { formatter: edge.type } }));
+            const links = this.graphEdges.map(edge => ({ source: edge.source, target: edge.target, value: edge.type }));
+            const canvasWidth = this.$refs.graphCanvas?.clientWidth || 900;
+            const graphScale = Math.max(0.9, Math.min(1.35, canvasWidth / 920));
             this.graphChart.setOption({
-              tooltip: { formatter: p => p.dataType === 'edge' ? p.data.value : `${p.data.name}<br/>${p.data.category}` },
-              legend: [{ data: categories.map(c => c.name), top: 12, right: 16 }],
+              backgroundColor: '#ffffff',
+              tooltip: {
+                backgroundColor: 'rgba(255,255,255,0.95)',
+                borderColor: '#e0e0e0',
+                borderWidth: 1,
+                textStyle: { color: '#333333', fontSize: 12 },
+                formatter: p => p.dataType === 'edge' ? p.data.value : `${p.data.name}<br/>${p.data.category}`,
+                padding: [10, 14]
+              },
+              legend: [{ 
+                data: categories.map(c => c.name), 
+                bottom: 24, 
+                left: 'center', 
+                orient: 'horizontal', 
+                textStyle: { color: '#666666', fontSize: 13, fontWeight: 500 }, 
+                itemWidth: 18, 
+                itemHeight: 18,
+                itemGap: 24
+              }],
               series: [{
                 type: 'graph',
                 layout: 'force',
+                left: 0,
+                right: 0,
+                top: 0,
+                bottom: 64,
                 roam: true,
                 draggable: true,
                 categories,
                 data: nodes,
                 links,
-                edgeSymbol: ['none', 'arrow'],
-                edgeSymbolSize: 6,
-                force: { repulsion: 220, edgeLength: [70, 150], gravity: 0.08 },
-                emphasis: { focus: 'adjacency' },
-                lineStyle: { color: '#94a3b8', opacity: 0.72, curveness: 0.08 },
-                label: { color: this.isDark ? '#e8ecf3' : '#172033', fontSize: 12 }
+                edgeSymbol: ['none', 'none'],
+                edgeSymbolSize: 0,
+                force: {
+                  repulsion: Math.round(280 * graphScale),
+                  edgeLength: [Math.round(70 * graphScale), Math.round(140 * graphScale)],
+                  gravity: 0.04
+                },
+                emphasis: {
+                  focus: 'adjacency',
+                  itemStyle: { 
+                    color: highlightColor, 
+                    borderColor: '#a87bc0', 
+                    borderWidth: 3,
+                    shadowBlur: 15,
+                    shadowColor: 'rgba(123, 77, 142, 0.4)'
+                  },
+                  lineStyle: { color: '#999999', opacity: 0.6, width: 1.2 },
+                  scale: true,
+                  scaleSize: 8
+                },
+                lineStyle: { color: '#d0d0d0', opacity: 0.35, curveness: 0, width: 1 },
+                label: { color: '#555555', fontSize: 11, textBorderColor: '#ffffff', textBorderWidth: 2 }
               }]
             }, true);
           },
@@ -1478,86 +2190,257 @@
             }
           },
           async searchGraph() {
-            if (!this.graphSearchKeyword.trim()) { this.graphSearchResults = []; return; }
+            if (!this.graphSearchKeyword.trim()) { this.graphSearchResults = []; this.loadGraph(); return; }
             const params = new URLSearchParams({ keyword: this.graphSearchKeyword, category: this.graphCategory, limit: 30 });
             const data = await this.api('/api/graph/search?' + params.toString());
             this.graphSearchResults = data.items || [];
+          },
+          graphSnippet(item) {
+            const props = item.properties || {};
+            return props.content || props.work || props.skills || props.title || props.source || '点击查看图谱中的一跳关系和属性。';
           },
           askFromGraphNode() {
             if (!this.graphSelectedNode) return;
             const label = this.graphSelectedNode.label;
             const type = this.graphSelectedNode.type;
-            this.currentPage = 'chat';
+            this.changePage('chat');
             this.question = `请围绕知识图谱节点「${label}」（类型：${type}）回答：它和大学生求职准备有什么关系？需要重点准备哪些能力？`;
             this.$nextTick(() => this.send());
           },
-          loadGoals() { const saved = localStorage.getItem('rag_goals'); if (saved) { this.goals = JSON.parse(saved).map(g => ({ ...g, days: this.calcDays(g.date) })); } },
+          formatNodeType(type, props) {
+            if (type === 'Document') {
+              const source = props?.source || '';
+              const ext = source.split('.').pop()?.toUpperCase();
+              return ext || '文档';
+            }
+            const typeMap = { 'JobCategory': '岗位分类', 'Position': '岗位', 'Skill': '技能', 'Company': '公司', 'City': '城市', 'Salary': '薪资', 'Education': '学历', 'Chunk': '语义块' };
+            return typeMap[type] || type;
+          },
+          filteredProps(props) {
+            if (!props) return {};
+            const exclude = ['embedding', 'metadata_json', 'embedding_vector', 'vector'];
+            return Object.fromEntries(Object.entries(props).filter(([k]) => !exclude.includes(k)));
+          },
+          formatPropKey(key) {
+            const keyMap = { 'source': '来源文件', 'title': '标题', 'content': '内容', 'skills': '技能要求', 'work': '工作内容', 'education': '学历要求', 'salary': '薪资范围', 'city': '工作城市', 'company': '公司名称', 'name': '名称', 'chunk_id': '语义块ID', 'order': '序号' };
+            return keyMap[key] || key.replace(/_/g, ' ');
+          },
+          formatPropValue(value, key) {
+            if (key === 'content' && typeof value === 'string' && value.length > 200) {
+              return value.substring(0, 200) + '...';
+            }
+            if (typeof value === 'object') {
+              try { return JSON.stringify(value, null, 2); } catch { return String(value); }
+            }
+            return value;
+          },
+          async loadGoals() { try { const data = await this.api('/api/auth/goals'); this.goals = (data.goals || []).map(g => ({ ...g, days: this.calcDays(g.date) })); } catch (err) { console.error('加载目标失败:', err); } },
           calcDays(dateStr) { const target = new Date(dateStr); const today = new Date(); today.setHours(0, 0, 0, 0); target.setHours(0, 0, 0, 0); const diff = target - today; return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24))); },
-          addGoal() { if (!this.newGoal.title || !this.newGoal.date) return; const goal = { title: this.newGoal.title, date: this.newGoal.date, days: this.calcDays(this.newGoal.date) }; this.goals.push(goal); localStorage.setItem('rag_goals', JSON.stringify(this.goals)); this.newGoal = { title: '', date: '' }; this.showGoalModal = false; },
+          async addGoal() { if (!this.newGoal.title || !this.newGoal.date) return; try { const res = await this.api('/api/auth/goals', { method: 'POST', body: JSON.stringify(this.newGoal) }); const goal = { ...res.data, days: this.calcDays(res.data.date) }; this.goals.push(goal); this.goals.sort((a,b) => new Date(a.date) - new Date(b.date)); } catch (err) { alert('添加目标失败：' + err.message); } this.newGoal = { title: '', date: '' }; this.showGoalModal = false; },
+          async deleteGoal(goalId) { if (!confirm('确定要删除这个目标吗？')) return; try { await this.api('/api/auth/goals/' + goalId, { method: 'DELETE' }); this.goals = this.goals.filter(g => g.id !== goalId); } catch (err) { alert('删除目标失败：' + err.message); } },
           selectJobOnly(job) { this.selectedJob = job; this.jobMessages = []; },
           sendJobQuick(q) { this.jobQuestion = q; this.sendJobMessage(); },
-          async sendJobMessage() { if (!this.jobQuestion.trim()) return; this.jobMessages.push({ role: 'user', content: this.jobQuestion }); const question = this.jobQuestion; this.jobQuestion = ''; try { const response = await fetch('/api/chat/stream', { method: 'POST', headers: this.headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ question: question + '（针对' + this.selectedJob.name + '岗位）', top_k: 5 }) }); const reader = response.body.getReader(); const decoder = new TextDecoder(); let content = ''; this.jobMessages.push({ role: 'assistant', content: '' }); while (true) { const { done, value } = await reader.read(); if (done) break; const chunk = decoder.decode(value, { stream: true }); const lines = chunk.split('\n'); for (const line of lines) { if (!line.trim()) continue; try { const event = JSON.parse(line); if (event.type === 'delta' && event.content) { content += event.content; if (this.$set) { this.$set(this.jobMessages, this.jobMessages.length - 1, { ...this.jobMessages[this.jobMessages.length - 1], content }); } else { this.jobMessages[this.jobMessages.length - 1].content = content; this.$forceUpdate(); } } } catch (err) {} } await new Promise(resolve => setTimeout(resolve, 0)); } } catch (err) { this.jobMessages.push({ role: 'assistant', content: '抱歉，回答失败：' + err.message }); } },
-          async loadDocuments() { try { const params = new URLSearchParams({ page: this.docPage, page_size: this.pageSize, keyword: this.docsSearchQuery, category: this.docCategory }); const data = await this.api('/api/knowledge/documents?' + params.toString()); this.documents = data.documents || []; this.totalDocs = data.total || 0; } catch (err) { this.error = err.message; } },
+          patchMessage(list, index, patch) {
+            const current = list[index];
+            if (!current) return;
+            list.splice(index, 1, Object.assign({}, current, patch));
+          },
+          appendMessageContent(list, index, content) {
+            const current = list[index];
+            if (!current) return;
+            this.patchMessage(list, index, { content: (current.content || '') + (content || ''), thinking: false, status: '' });
+          },
+          async readNdjsonStream(response, onEvent) { if (!response.ok || !response.body) { const errText = await response.text().catch(() => ''); let errMsg = '流式请求失败'; try { const errData = JSON.parse(errText); errMsg = errData.detail || errData.message || errMsg; } catch (e) { if (errText) errMsg = errText.slice(0, 120); } throw new Error(errMsg); } const reader = response.body.getReader(); const decoder = new TextDecoder('utf-8'); let buffer = ''; while (true) { const result = await reader.read(); if (result.done) break; buffer += decoder.decode(result.value, { stream: true }); const lines = buffer.split('\n'); buffer = lines.pop() || ''; for (const line of lines) { const text = line.trim(); if (!text) continue; const event = JSON.parse(text); await onEvent(event); } } const rest = buffer.trim(); if (rest) await onEvent(JSON.parse(rest)); },
+          async sendJobMessage() { if (!this.jobQuestion.trim() || !this.selectedJob) return; this.jobMessages.push({ role: 'user', content: this.jobQuestion }); const question = this.jobQuestion; const categoryKey = this.selectedJob.categoryKey || this.selectedJob.key; this.jobQuestion = ''; const assistantIndex = this.jobMessages.length; this.jobMessages.push({ role: 'assistant', content: '', sources: [], thinking: true, status: '正在准备岗位材料' }); try { const response = await fetch('/api/chat/stream', { method: 'POST', headers: this.headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ question: question + '（针对' + this.selectedJob.name + '岗位）', top_k: 5, category: categoryKey, session_type: 'job' }) }); await this.readNdjsonStream(response, async event => { if (event.type === 'status') { this.patchMessage(this.jobMessages, assistantIndex, { status: event.content || '正在生成回答', thinking: true }); } else if (event.type === 'meta') { this.patchMessage(this.jobMessages, assistantIndex, { sources: event.sources || [] }); } else if (event.type === 'delta') { this.appendMessageContent(this.jobMessages, assistantIndex, event.content); } else if (event.type === 'error') { throw new Error(event.message); } }); await this.loadSessions(); } catch (err) { const current = this.jobMessages[assistantIndex] || {}; this.patchMessage(this.jobMessages, assistantIndex, { thinking: false, content: current.content || ('抱歉，回答失败：' + err.message), status: '' }); } finally { this.patchMessage(this.jobMessages, assistantIndex, { thinking: false, status: '' }); } },
+          async loadDocuments() { try { const isJobsPage = this.currentPage === 'jobs'; const params = new URLSearchParams({ page: isJobsPage ? 1 : this.docPage, page_size: isJobsPage ? 50 : this.pageSize, keyword: isJobsPage ? '' : this.docsSearchQuery, category: isJobsPage ? 'all' : this.docCategory }); const data = await this.api('/api/knowledge/documents?' + params.toString()); this.documents = data.documents || []; this.totalDocs = data.total || 0; } catch (err) { this.error = err.message; } },
           reloadDocuments() { this.docPage = 1; this.selectedDoc = null; this.loadDocuments(); },
           setDocCategory(category) { this.docCategory = category; this.reloadDocuments(); },
           goDocPage(page) { this.docPage = Math.min(Math.max(page, 1), this.totalPages); this.loadDocuments(); },
           selectUploadFiles() { document.getElementById('docs-file-input').click(); },
           triggerChatUpload() { document.getElementById('chat-file-input').click(); },
-          onFileChange(event) { this.selectedFiles = Array.from(event.target.files || []); },
+          mergeSelectedFiles(files) {
+            const incoming = Array.from(files || []);
+            const byKey = new Map(this.selectedFiles.map(file => [file.name + ':' + file.size, file]));
+            incoming.forEach(file => byKey.set(file.name + ':' + file.size, file));
+            this.selectedFiles = Array.from(byKey.values());
+          },
+          onFileChange(event) { this.mergeSelectedFiles(event.target.files); },
+          onFileDrop(event) { this.uploadDragging = false; this.mergeSelectedFiles(event.dataTransfer.files); },
+          removeUploadFile(index) { this.selectedFiles.splice(index, 1); },
           async onChatFileChange(event) { this.selectedFiles = Array.from(event.target.files || []); await this.uploadFiles(); if (event.target) event.target.value = ''; },
           async uploadFiles() {
             if (!this.selectedFiles.length) return;
             this.uploading = true; this.error = '';
             const form = new FormData(); this.selectedFiles.forEach(file => form.append('files', file));
-            try { this.stats = await this.api('/api/knowledge/upload', { method: 'POST', body: form, headers: {} }); this.selectedFiles = []; const input = document.getElementById('docs-file-input'); if (input) input.value = ''; await this.loadCategories(); await this.loadDocuments(); await this.loadStats(); this.statusText = '文档已解析入库'; }
-            catch (err) { this.error = err.message; } finally { this.uploading = false; }
+            try { 
+                const response = await fetch('/api/knowledge/upload', { method: 'POST', body: form, headers: { Authorization: 'Bearer ' + this.token } });
+                const text = await response.text();
+                let data = {};
+                try { data = text ? JSON.parse(text) : {}; } catch (e) { throw new Error(text ? text.slice(0, 160) : '响应不是有效 JSON'); }
+                if (!response.ok || data.code !== 0) throw new Error(data.detail || data.message || '上传失败');
+                this.stats = data.data; this.uploadResult = data.data || {}; this.showUploadResultModal = true; this.selectedFiles = []; 
+                const input = document.getElementById('docs-file-input'); if (input) input.value = ''; 
+                await this.loadCategories(); await this.loadDocuments(); await this.loadStats(); 
+                if (this.currentPage === 'graph') await this.loadGraph(); 
+                this.statusText = '文档已解析入库'; 
+            } catch (err) { this.error = err.message; } finally { this.uploading = false; }
           },
-          async openDocument(doc) { this.selectedDoc = { filename: doc.filename, content: '正在读取文档...' }; try { this.selectedDoc = await this.api('/api/knowledge/document/' + encodeURIComponent(doc.id)); if (this.currentPage !== 'docs') this.currentPage = 'docs'; } catch (err) { this.selectedDoc.content = '读取失败：' + err.message; } },
+          documentPreviewUrl(doc) { return doc && doc.id ? '/api/knowledge/document-file/' + encodeURIComponent(doc.id) + '?token=' + encodeURIComponent(this.token) : ''; },
+          async openDocument(doc) { this.selectedDoc = { filename: doc.filename, content: '正在读取文档...' }; try { this.selectedDoc = await this.api('/api/knowledge/document/' + encodeURIComponent(doc.id)); if (this.currentPage !== 'docs') this.changePage('docs'); } catch (err) { this.selectedDoc.content = '读取失败：' + err.message; } },
+          openDocModal(doc) { this.previewDoc = doc; this.showDocModal = true; },
+          closeDocModal() { this.showDocModal = false; this.previewDoc = null; },
+          uploadResultSubtitle() { const data = this.uploadResult || {}; const imported = data.imported || 0; const failed = (data.failed_documents || []).length; const duplicate = data.skipped_duplicates || 0; if (imported > 0 && failed === 0 && duplicate === 0) return '文档已完成解析、切块、向量化并更新知识库。'; if (imported > 0) return '部分文档已入库，另有文件被跳过或解析失败。'; return '没有新增文档入库，请查看下方跳过原因。'; },
+          uploadResultNeo4jText() { const data = this.uploadResult || {}; const neo4j = data.neo4j || {}; if (neo4j.enabled || data.neo4j_enabled) return 'Neo4j 图谱已更新'; if (data.neo4j_last_error || neo4j.last_error) return 'Neo4j 未连接，已使用本地向量索引'; return '已更新本地向量索引'; },
+          uploadResultRows() { const data = this.uploadResult || {}; const imported = (data.imported_documents || []).map(item => ({ name: item.filename, detail: this.categoryLabel(item.category) + ' · ' + (item.text_length || 0) + ' 字' })); const failed = (data.failed_documents || []).map(item => ({ name: item.filename, detail: item.reason || '未入库' })); return imported.concat(failed).slice(0, 8); },
           async deleteDocument(docId) { if (!confirm('确定要删除这个知识文档吗？')) return; try { await this.api('/api/knowledge/document/' + encodeURIComponent(docId), { method: 'DELETE' }); if (this.selectedDoc && this.selectedDoc.id === docId) this.selectedDoc = null; await this.loadCategories(); await this.loadDocuments(); await this.loadStats(); } catch (err) { alert('删除失败：' + err.message); } },
           categoryLabel(key) { const item = this.categories.find(cat => cat.key === key); return item ? item.label : '通用求职'; },
+          sessionTypeLabel(type) { const map = { chat: '[知识问答] ', interview: '[模拟面试] ', job: '[岗位助手] ' }; return map[type] || ''; },
           quickQuestion(doc) { this.sendQuick('请结合知识文档《' + doc.filename + '》回答：这份材料中有哪些适合大学生求职准备的重点？'); },
           askFromHome() { if (!this.searchQuery.trim()) return; this.sendQuick(this.searchQuery.trim()); this.searchQuery = ''; },
-          selectJobOnly(job) { this.selectedJob = job; this.docCategory = job.key; this.docPage = 1; this.loadDocuments(); },
-          selectJob(job) { this.selectedJob = job; this.docCategory = job.key; this.loadDocuments(); this.sendQuick(job.questions[0]); },
-          sendQuick(text) { this.currentPage = 'chat'; this.question = text; this.$nextTick(() => this.send()); },
+          selectJobOnly(job) { this.selectedJob = job; this.docCategory = job.categoryKey || job.key; this.docPage = 1; this.loadDocuments(); },
+          selectJob(job) { this.selectedJob = job; this.docCategory = job.categoryKey || job.key; this.loadDocuments(); this.sendQuick(job.questions[0]); },
+          sendQuick(text) { this.changePage('chat'); this.question = text; this.$nextTick(() => this.send()); },
+          newChat() { this.sessionId = ''; this.messages = []; this.question = ''; },
           async openChatWithSession(sessionId) { this.sessionId = sessionId; this.messages = []; this.question = ''; try { const history = await this.api('/api/history/' + encodeURIComponent(sessionId)); history.forEach(item => { this.messages.push({ role: 'user', content: item.question }); this.messages.push({ role: 'assistant', content: item.answer, sources: [] }); }); this.$nextTick(this.scrollDown); } catch (err) { this.error = err.message; } },
           async deleteSession(sessionId) { if (!confirm('确定要删除这个对话吗？')) return; try { await this.api('/api/session/' + encodeURIComponent(sessionId) + '/clear', { method: 'POST' }); if (this.sessionId === sessionId) { this.sessionId = ''; this.messages = []; } await this.loadSessions(); } catch (err) { alert('删除失败：' + err.message); } },
+          renameSession(session) { this.renameSessionId = session.session_id; this.renameTitle = session.last_question; this.showRenameModal = true; },
+          openContextMenu(event, session) { event.preventDefault(); this._contextMenuClick = true; setTimeout(() => { this._contextMenuClick = false; }, 200); this.contextSession = session; this.contextMenuX = event.clientX; this.contextMenuY = event.clientY; this.isContextMenuOpen = true; },
+          closeContextMenu() { if (!this._contextMenuClick) { this.isContextMenuOpen = false; } },
+          contextRename() { if (this.contextSession) { this.renameSession(this.contextSession); } this.isContextMenuOpen = false; },
+          contextDelete() { if (this.contextSession) { this.deleteSession(this.contextSession.session_id); } this.isContextMenuOpen = false; },
+          async confirmRename() { if (!this.renameTitle.trim()) return; try { await this.api('/api/session/' + encodeURIComponent(this.renameSessionId) + '/rename', { method: 'POST', body: JSON.stringify({ title: this.renameTitle.trim() }) }); await this.loadSessions(); } catch (err) { alert('重命名失败：' + err.message); } finally { this.showRenameModal = false; this.renameSessionId = ''; this.renameTitle = ''; } },
           stopChat() { if (this.abortController) this.abortController.abort(); this.abortController = null; this.loading = false; },
-          async send() { await this.sendToStream(this.question, this.messages, 'assistant', value => this.question = value, value => this.loading = value, value => this.abortController = value, () => this.scrollDown()); },
-          async sendToStream(textValue, targetMessages, assistantRole, clearInput, setLoading, setAbort, scrollFn) {
+          currentInterviewProfile() { return this.interviewProfiles.find(item => item.key === this.interviewProfileKey) || this.interviewProfiles[0]; },
+          interviewBackgroundPrompt() { const profile = this.currentInterviewProfile(); const extra = this.interviewCustomBackground ? '补充背景：' + this.interviewCustomBackground + '。' : ''; return profile.role + extra; },
+          async send() { await this.sendToStream(this.question, this.messages, 'assistant', value => this.question = value, value => this.loading = value, value => this.abortController = value, (force, checkOnly, shouldFollow) => checkOnly ? this.shouldFollowScroll('chatBox') : this.scrollDown(force, shouldFollow), 'chat'); },
+          async sendToStream(textValue, targetMessages, assistantRole, clearInput, setLoading, setAbort, scrollFn, sessionType = 'chat') {
             const text = (textValue || '').trim(); if (!text || this.loading || this.interviewLoading) return;
             clearInput(''); this.error = ''; setLoading(true);
             targetMessages.push({ role: 'user', content: text });
-            const assistant = { role: assistantRole, content: '', sources: [], thinking: true }; targetMessages.push(assistant); scrollFn();
+            const assistantIndex = targetMessages.length;
+            targetMessages.push({ role: assistantRole, content: '', sources: [], thinking: true, status: '正在准备回答' }); scrollFn(true);
             const controller = new AbortController(); setAbort(controller);
             try {
-              const response = await fetch('/api/chat/stream', { method: 'POST', headers: this.headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ question: text, session_id: this.sessionId, top_k: this.topK }), signal: controller.signal });
-              if (!response.ok || !response.body) { const errData = await response.json().catch(() => ({})); throw new Error(errData.detail || '流式请求失败'); }
-              const reader = response.body.getReader(); const decoder = new TextDecoder('utf-8'); let buffer = '';
-              while (true) {
-                const result = await reader.read(); if (result.done) break;
-                buffer += decoder.decode(result.value, { stream: true });
-                const lines = buffer.split('\n'); buffer = lines.pop() || '';
-                for (const line of lines) {
-                  if (!line.trim()) continue;
-                  const event = JSON.parse(line);
-                  if (event.type === 'meta') { this.sessionId = event.session_id; assistant.sources = event.sources || []; }
-                  else if (event.type === 'delta') { assistant.thinking = false; assistant.content += event.content || ''; scrollFn(); }
-                  else if (event.type === 'error') { throw new Error(event.message); }
+              const response = await fetch('/api/chat/stream', { method: 'POST', headers: this.headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ question: text, session_id: this.sessionId, top_k: this.topK, session_type: sessionType }), signal: controller.signal });
+              await this.readNdjsonStream(response, async event => {
+                if (event.type === 'status') { const shouldFollow = scrollFn(false, true); this.patchMessage(targetMessages, assistantIndex, { status: event.content || '正在生成回答', thinking: true }); scrollFn(false, false, shouldFollow); }
+                else if (event.type === 'meta') { this.sessionId = event.session_id; this.patchMessage(targetMessages, assistantIndex, { sources: event.sources || [] }); }
+                else if (event.type === 'delta') {
+                  const shouldFollow = scrollFn(false, true);
+                  this.appendMessageContent(targetMessages, assistantIndex, event.content);
+                  scrollFn(false, false, shouldFollow);
                 }
-              }
-            } catch (err) { if (err.name !== 'AbortError') { this.error = err.message; assistant.content += '\n\n请求失败：' + err.message; } }
-            finally { assistant.thinking = false; setLoading(false); setAbort(null); await this.loadSessions(); scrollFn(); }
+                else if (event.type === 'error') { throw new Error(event.message); }
+              });
+            } catch (err) { if (err.name !== 'AbortError') { this.error = err.message; const current = targetMessages[assistantIndex] || {}; this.patchMessage(targetMessages, assistantIndex, { content: (current.content || '') + '\n\n请求失败：' + err.message, thinking: false, status: '' }); } }
+            finally { this.patchMessage(targetMessages, assistantIndex, { thinking: false, status: '' }); setLoading(false); setAbort(null); await this.loadSessions(); scrollFn(); }
           },
-          startInterview() { this.interviewMessages = [{ role: 'interviewer', content: '你好，我是本次模拟面试的 AI 考官。请先用 1 分钟做一段求职自我介绍，我会根据你的回答继续追问。' }]; this.interviewAnswer = ''; },
-          async sendInterviewAnswer() { const prompt = '你现在扮演大学生求职模拟面试官。用户回答如下：' + this.interviewAnswer + '\\n请先简短点评，再提出下一个追问问题。'; await this.sendToStream(prompt, this.interviewMessages, 'interviewer', value => this.interviewAnswer = value, value => this.interviewLoading = value, value => this.interviewAbortController = value, () => this.scrollInterviewDown()); },
+          startInterview() { const profile = this.currentInterviewProfile(); this.interviewSessionId = ''; this.interviewMessages = [{ role: 'interviewer', content: '你好，我是本轮' + profile.name + '。接下来我会按真实面试节奏来：先听你的自我介绍，再围绕岗位能力、项目细节和动机做追问。请先用 1 分钟介绍一下你自己，以及你想应聘的岗位方向。' }]; this.interviewAnswer = ''; },
+          async sendInterviewAnswer() { const userAnswer = this.interviewAnswer.trim(); if (!userAnswer) return; this.interviewMessages.push({ role: 'user', content: userAnswer }); const prompt = '你现在是一名真实的大学生求职模拟面试官。面试官背景：' + this.interviewBackgroundPrompt() + '\\n\\n候选人刚才回答：' + userAnswer + '\\n\\n请严格按以下顺序输出，标题必须单独成行、带中文冒号，标题后必须换行再写正文：\\n### 面试官回应：\\n用真实面试官口吻，先自然接住候选人的回答，然后提出 1 个具体、可回答的追问。不要一上来长篇分析。\\n\\n### 简短分析：\\n用 2-4 条要点指出候选人刚才回答的优点、风险和下一步改进方向。'; this.interviewAnswer = ''; this.interviewLoading = true; const assistantIndex = this.interviewMessages.length; this.interviewMessages.push({ role: 'interviewer', content: '', sources: [], thinking: true, status: 'AI 面试官正在阅读你的回答' }); const controller = new AbortController(); this.interviewAbortController = controller; try { const response = await fetch('/api/chat/stream', { method: 'POST', headers: this.headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ question: prompt, top_k: this.topK, session_type: 'interview', session_id: this.interviewSessionId }), signal: controller.signal }); await this.readNdjsonStream(response, async event => { if (event.type === 'status') { const shouldFollow = this.shouldFollowScroll('interviewBox'); this.patchMessage(this.interviewMessages, assistantIndex, { status: event.content || '正在生成追问', thinking: true }); this.scrollInterviewDown(false, shouldFollow); } else if (event.type === 'meta') { if (event.session_id) this.interviewSessionId = event.session_id; this.patchMessage(this.interviewMessages, assistantIndex, { sources: event.sources || [] }); } else if (event.type === 'delta') { const shouldFollow = this.shouldFollowScroll('interviewBox'); this.appendMessageContent(this.interviewMessages, assistantIndex, event.content); this.scrollInterviewDown(false, shouldFollow); } else if (event.type === 'error') { throw new Error(event.message); } }); } catch (err) { if (err.name !== 'AbortError') { const current = this.interviewMessages[assistantIndex] || {}; this.patchMessage(this.interviewMessages, assistantIndex, { content: (current.content || '') + '\n\n请求失败：' + err.message, thinking: false, status: '' }); } } finally { this.patchMessage(this.interviewMessages, assistantIndex, { thinking: false, status: '' }); this.interviewLoading = false; this.interviewAbortController = null; await this.loadSessions(); this.scrollInterviewDown(false, this.shouldFollowScroll('interviewBox')); } },
           stopInterview() { if (this.interviewAbortController) this.interviewAbortController.abort(); this.interviewAbortController = null; this.interviewLoading = false; },
-          toggleVoice() {
+          async toggleVoice() {
+            if (this.currentPage === 'jobs') {
+              await this.toggleJobVoice();
+              return;
+            }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+              this.toggleBrowserVoice();
+              return;
+            }
+            if (navigator.mediaDevices && window.MediaRecorder) {
+              let target = 'chat';
+              if (this.currentPage === 'interview') target = 'interview';
+              await this.toggleBackendVoice(target);
+              return;
+            }
+            this.toggleBrowserVoice();
+          },
+          async toggleBackendVoice(target) {
+            if (this.listening && this.mediaRecorder) { this.stopStreamingVoice(this.mediaRecorder, this.speechSocket); return; }
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              this.recordedChunks = [];
+              this.voiceTarget = target;
+              this.speechSocket = this.createSpeechSocket(target, () => this.listening = false);
+              this.mediaRecorder = new MediaRecorder(stream);
+              this.mediaRecorder.ondataavailable = event => {
+                if (event.data && event.data.size) {
+                  this.recordedChunks.push(event.data);
+                  if (this.speechSocket && this.speechSocket.readyState === WebSocket.OPEN) this.speechSocket.send(event.data);
+                }
+              };
+              this.mediaRecorder.onstop = async () => {
+                this.listening = false;
+                stream.getTracks().forEach(track => track.stop());
+                if (this.speechSocket && this.speechSocket.readyState === WebSocket.OPEN) this.speechSocket.send(JSON.stringify({ type: 'stop' }));
+                const recorder = this.mediaRecorder;
+                this.mediaRecorder = null;
+                setTimeout(async () => {
+                  if (this.speechSocket && this.speechSocket.readyState === WebSocket.OPEN) return;
+                  const blob = new Blob(this.recordedChunks, { type: (recorder && recorder.mimeType) || 'audio/webm' });
+                  if (!this.getVoiceText(target)) await this.recognizeAudio(blob, target);
+                }, 900);
+              };
+              this.listening = true;
+              this.mediaRecorder.start(800);
+            } catch (err) {
+              this.listening = false;
+              this.mediaRecorder = null;
+              this.toggleBrowserVoice();
+            }
+          },
+          createSpeechSocket(target, onClosed) {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const socket = new WebSocket(`${protocol}//${location.host}/ws/speech?token=${encodeURIComponent(this.token)}&suffix=.webm`);
+            socket.onmessage = event => {
+              let payload = {};
+              try { payload = JSON.parse(event.data); } catch (err) { return; }
+              if ((payload.type === 'partial' || payload.type === 'final') && payload.text) this.setVoiceText(target, payload.text);
+              if (payload.type === 'error') alert('语音识别失败：' + payload.message);
+            };
+            socket.onclose = () => { if (onClosed) onClosed(); };
+            socket.onerror = () => { if (onClosed) onClosed(); };
+            return socket;
+          },
+          stopStreamingVoice(recorder, socket) {
+            if (recorder && recorder.state !== 'inactive') recorder.stop();
+            else if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'stop' }));
+          },
+          setVoiceText(target, text) {
+            if (target === 'interview') this.interviewAnswer = text;
+            else if (target === 'job') this.jobQuestion = text;
+            else this.question = text;
+          },
+          getVoiceText(target) {
+            if (target === 'interview') return this.interviewAnswer;
+            if (target === 'job') return this.jobQuestion;
+            return this.question;
+          },
+          async recognizeAudio(blob, target) {
+            if (!blob || !blob.size) return;
+            const form = new FormData();
+            form.append('file', blob, 'voice.webm');
+            try {
+              const data = await this.api('/api/speech/recognize', { method: 'POST', body: form, headers: {} });
+              const text = (data.text || '').trim();
+              if (!text) return;
+              if (target === 'interview') this.interviewAnswer = text;
+              else if (target === 'job') this.jobQuestion = text;
+              else this.question = text;
+            } catch (err) {
+              alert('语音识别失败：' + err.message);
+            }
+          },
+          toggleBrowserVoice() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) { alert('当前浏览器不支持语音输入，请使用 Chrome 或 Edge。'); return; }
             if (this.listening && this.recognition) { this.recognition.stop(); return; }
             const targetPage = this.currentPage;
-            const baseText = targetPage === 'interview' ? this.interviewAnswer : this.question;
+            let baseText = '';
+            if (targetPage === 'interview') baseText = this.interviewAnswer;
+            else if (targetPage === 'jobs') baseText = this.jobQuestion;
+            else baseText = this.question;
             let finalText = baseText ? baseText.trimEnd() + ' ' : '';
             this.recognition = new SpeechRecognition();
             this.recognition.lang = 'zh-CN';
@@ -1573,13 +2456,55 @@
               }
               const text = (finalText + interimText).trim();
               if (targetPage === 'interview') this.interviewAnswer = text;
+              else if (targetPage === 'jobs') this.jobQuestion = text;
               else this.question = text;
             };
             this.recognition.onend = () => { this.listening = false; this.recognition = null; };
-            this.recognition.onerror = () => { this.listening = false; this.recognition = null; };
+            this.recognition.onerror = event => { console.error('语音识别错误:', event); this.listening = false; this.recognition = null; };
             this.recognition.start();
           },
-          toggleJobVoice() {
+          async toggleJobVoice() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+              this.toggleJobBrowserVoice();
+              return;
+            }
+            if (navigator.mediaDevices && window.MediaRecorder) {
+              if (this.jobListening && this.jobMediaRecorder) { this.stopStreamingVoice(this.jobMediaRecorder, this.jobSpeechSocket); return; }
+              try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.jobRecordedChunks = [];
+                this.jobSpeechSocket = this.createSpeechSocket('job', () => this.jobListening = false);
+                this.jobMediaRecorder = new MediaRecorder(stream);
+                this.jobMediaRecorder.ondataavailable = event => {
+                  if (event.data && event.data.size) {
+                    this.jobRecordedChunks.push(event.data);
+                    if (this.jobSpeechSocket && this.jobSpeechSocket.readyState === WebSocket.OPEN) this.jobSpeechSocket.send(event.data);
+                  }
+                };
+                this.jobMediaRecorder.onstop = async () => {
+                  this.jobListening = false;
+                  stream.getTracks().forEach(track => track.stop());
+                  if (this.jobSpeechSocket && this.jobSpeechSocket.readyState === WebSocket.OPEN) this.jobSpeechSocket.send(JSON.stringify({ type: 'stop' }));
+                  const recorder = this.jobMediaRecorder;
+                  this.jobMediaRecorder = null;
+                  setTimeout(async () => {
+                    if (this.jobSpeechSocket && this.jobSpeechSocket.readyState === WebSocket.OPEN) return;
+                    const blob = new Blob(this.jobRecordedChunks, { type: (recorder && recorder.mimeType) || 'audio/webm' });
+                    if (!this.jobQuestion) await this.recognizeAudio(blob, 'job');
+                  }, 900);
+                };
+                this.jobListening = true;
+                this.jobMediaRecorder.start(800);
+                return;
+              } catch (err) {
+                this.jobListening = false;
+                this.jobMediaRecorder = null;
+              }
+            }
+            this.toggleJobBrowserVoice();
+          },
+          toggleJobBrowserVoice() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) { alert('当前浏览器不支持语音输入，请使用 Chrome 或 Edge。'); return; }
             if (this.jobListening && this.jobRecognition) { this.jobRecognition.stop(); return; }
@@ -1603,6 +2528,9 @@
             this.jobRecognition.start();
           },
           triggerJobFileUpload() { document.getElementById('job-file-input').click(); },
+          copyText(text) { navigator.clipboard.writeText(text).then(() => {}).catch(() => {}); },
+          toggleRead(msg) { if ('speechSynthesis' in window) { if (msg.isReading) { window.speechSynthesis.cancel(); msg.isReading = false; return; } window.speechSynthesis.cancel(); const text = this.speechText(msg.content); if (!text) return; const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'zh-CN'; utterance.onend = () => { msg.isReading = false; }; msg.isReading = true; window.speechSynthesis.speak(utterance); } },
+          stopRead() { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); } },
           async onJobFileChange(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1610,41 +2538,135 @@
               const form = new FormData();
               form.append('files', file);
               const data = await this.api('/api/knowledge/upload', { method: 'POST', body: form, headers: {} });
+              this.stats = data || {}; this.uploadResult = data || {}; this.showUploadResultModal = true;
               this.jobQuestion += '（已上传文件：' + file.name + '）';
+              await this.loadCategories(); await this.loadDocuments(); await this.loadStats();
               event.target.value = '';
             } catch (err) {
               alert('文件上传失败：' + err.message);
             }
           },
-          scrollDown() { this.$nextTick(() => { const box = this.$refs.chatBox; if (box) box.scrollTop = box.scrollHeight; }); },
-          scrollInterviewDown() { this.$nextTick(() => { const box = this.$refs.interviewBox; if (box) box.scrollTop = box.scrollHeight; }); },
+          shouldFollowScroll(refName) {
+            const box = this.$refs[refName];
+            if (!box) return true;
+            return box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+          },
+          scrollBoxToBottom(refName, force, shouldFollow) {
+            this.$nextTick(() => {
+              const box = this.$refs[refName];
+              if (!box) return;
+              const canFollow = shouldFollow === undefined ? this.shouldFollowScroll(refName) : shouldFollow;
+              if (force || canFollow) box.scrollTop = box.scrollHeight;
+            });
+          },
+          scrollDown(force, shouldFollow) { this.scrollBoxToBottom('chatBox', force, shouldFollow); },
+          scrollInterviewDown(force, shouldFollow) { this.scrollBoxToBottom('interviewBox', force, shouldFollow); },
+          speechText(content) {
+            if (!content) return '';
+            return String(content)
+              .replace(/\r\n/g, '\n')
+              .replace(/```[\s\S]*?```/g, match => match.replace(/```[a-zA-Z0-9_-]*\n?|```/g, ' '))
+              .replace(/`([^`]+)`/g, '$1')
+              .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+              .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+              .replace(/^\s{0,3}#{1,6}\s*/gm, '')
+              .replace(/^\s{0,3}>\s?/gm, '')
+              .replace(/^\s*(?:[-*+•]|\d+[.)])\s+/gm, '')
+              .replace(/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/gm, '')
+              .replace(/\|/g, '，')
+              .replace(/[*_~#>`\\[\](){}<>]/g, '')
+              .replace(/[ \t]+/g, ' ')
+              .replace(/\n{2,}/g, '\n')
+              .trim();
+          },
           formatMessage(content) {
             if (!content) return '';
-            let html = content.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-            html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="code-block"><code>$2</code></pre>');
-            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-            html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong class="highlight">$1</strong>');
-            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            html = html.replace(/^#{3}\s*(.*$)/gm, '<h3>$1</h3>');
-            html = html.replace(/^#{2}\s*(.*$)/gm, '<h2>$1</h2>');
-            html = html.replace(/^#\s*(.*$)/gm, '<h1>$1</h1>');
-            html = html.replace(/^(#{1,3})\s*(.*)$/gm, (_, h, text) => {
-              const level = h.length;
-              return `<h${level}>${text}</h${level}>`;
+            const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+            const inline = value => escapeHtml(value)
+              .replace(/`([^`]+)`/g, '<code>$1</code>')
+              .replace(/\*\*\*(.*?)\*\*\*/g, '<strong class="highlight">$1</strong>')
+              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              .replace(/\*(.*?)\*/g, '<em>$1</em>');
+            let source = String(content)
+              .replace(/\r\n/g, '\n')
+              .replace(/(?:^|\s)(?:#{1,3}\s*)?面试官回应\s*[：:]?\s*/g, '\n### 面试官回应：\n')
+              .replace(/(?:^|\s)(?:#{1,3}\s*)?简短分析\s*[：:]?\s*/g, '\n### 简短分析：\n')
+              .replace(/---\s*(#{1,3})/g, '\n$1')
+              .replace(/\|\s*\|/g, '|');
+            const codeBlocks = [];
+            source = source.replace(/```(\w+)?\n([\s\S]*?)```/g, (_, lang, code) => {
+              const token = `@@CODE_${codeBlocks.length}@@`;
+              codeBlocks.push(`<pre class="code-block"><code>${escapeHtml(code)}</code></pre>`);
+              return token;
             });
-            html = html.replace(/^(#{1,3})\s+(.*)$/gm, (_, h, text) => `<h${h.length}>${text}</h${h.length}>`);
-            html = html.replace(/^(\d+)\.\s+/gm, '<span class="num">$1.</span>');
-            html = html.replace(/^\s*[-*+•]\s+/gm, '<span class="bullet">•</span>');
-            html = html.replace(/^>\s*(.*$)/gm, '<blockquote>$1</blockquote>');
-            html = html.replace(/\n\n/g, '</p><p>');
-            html = html.replace(/\n/g, '<br>');
-            html = '<p>' + html + '</p>';
-            html = html.replace(/<p><\/p>/g, '');
-            return html;
+            const lines = source.split('\n');
+            const blocks = [];
+            let paragraph = [];
+            const flushParagraph = () => {
+              if (!paragraph.length) return;
+              blocks.push('<p>' + paragraph.map(item => inline(item)).join('<br>') + '</p>');
+              paragraph = [];
+            };
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (!line) { flushParagraph(); continue; }
+              if (/^@@CODE_\d+@@$/.test(line)) { flushParagraph(); blocks.push(line); continue; }
+              const tableRun = [];
+              let j = i;
+              while (j < lines.length && /^\|.*\|$/.test(lines[j].trim())) {
+                const candidate = lines[j].trim();
+                if (!/^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(candidate)) tableRun.push(candidate);
+                j++;
+              }
+              if (tableRun.length >= 2) {
+                flushParagraph();
+                const rows = tableRun.map(row => row.replace(/^\||\|$/g, '').split('|').map(cell => inline(cell.trim())));
+                const cols = Math.max(...rows.map(row => row.length));
+                blocks.push(`<div class="md-table" style="--cols:${cols}">` + rows.map(row => `<div class="md-row">${row.map(cell => `<div class="md-cell">${cell}</div>`).join('')}</div>`).join('') + '</div>');
+                i = j - 1;
+                continue;
+              }
+              const heading = line.match(/^(#{1,3})\s*(.+)$/);
+              if (heading) { flushParagraph(); blocks.push(`<h${heading[1].length}>${inline(heading[2])}</h${heading[1].length}>`); continue; }
+              if (/^>\s+/.test(line)) { flushParagraph(); blocks.push('<blockquote>' + inline(line.replace(/^>\s+/, '')) + '</blockquote>'); continue; }
+              const sourceLine = line.match(/^参考来源[:：]\s*(.+)$/);
+              if (sourceLine) {
+                flushParagraph();
+                blocks.push('<div class="md-source">参考来源：' + inline(sourceLine[1]) + '</div>');
+                continue;
+              }
+              const listRun = [];
+              j = i;
+              while (j < lines.length && /^\s*(\d+[.)]|[-*+•])\s+/.test(lines[j])) {
+                listRun.push(lines[j]);
+                j++;
+              }
+              if (listRun.length) {
+                flushParagraph();
+                const ordered = /^\s*\d+[.)]/.test(listRun[0]);
+                const tag = ordered ? 'ol' : 'ul';
+                blocks.push(`<${tag}>` + listRun.map(item => {
+                  const depth = Math.min(Math.floor((item.match(/^\s*/)[0].replace(/\t/g, '  ').length) / 2), 3);
+                  const text = item.trim().replace(/^(\d+[.)]|[-*+•])\s+/, '');
+                  return `<li class="md-li-depth-${depth}">${inline(text)}</li>`;
+                }).join('') + `</${tag}>`);
+                i = j - 1;
+                continue;
+              }
+              paragraph.push(line);
+            }
+            flushParagraph();
+            return blocks.join('').replace(/@@CODE_(\d+)@@/g, (_, index) => codeBlocks[Number(index)] || '');
           },
           formatTime(timestamp) { if (!timestamp) return ''; const date = new Date(timestamp * 1000); const diff = Date.now() - date.getTime(); if (diff < 60000) return '刚刚'; if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前'; if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前'; return date.toLocaleDateString('zh-CN'); },
           formatSize(bytes) { if (!bytes) return '0 B'; if (bytes < 1024) return bytes + ' B'; if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / 1024 / 1024).toFixed(1) + ' MB'; },
+          normalizedSessionType(session) {
+            const title = session && session.last_question ? session.last_question : '';
+            if (session && session.session_type && session.session_type !== 'chat') return session.session_type;
+            if (/模拟面试|面试官/.test(title)) return 'interview';
+            if (/岗位匹配|岗位助手/.test(title)) return 'job';
+            return 'chat';
+          },
           openProfileEdit() { this.editProfile = { display_name: this.user.display_name || '', email: this.user.email || '', phone: this.user.phone || '', avatar: this.user.avatar || '' }; this.showProfileModal = true; this.showUserMenu = false; },
           openPasswordEdit() { this.passwordUpdate = { old_password: '', new_password: '', confirm_password: '' }; this.passwordError = ''; this.showPasswordModal = true; this.showUserMenu = false; },
           selectAvatar() { document.getElementById('avatar-input').click(); },
@@ -1657,4 +2679,3 @@
   </script>
 </body>
 </html>
-

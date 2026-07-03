@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import math
 import re
+import hashlib
+import logging
 from pathlib import Path
 from typing import Iterable, List, Optional
 
@@ -11,32 +13,61 @@ import numpy as np
 from .models import DocumentChunk, RetrievedChunk
 
 
+logger = logging.getLogger(__name__)
+
+
 class EmbeddingBackend:
     """Hugging Face sentence embedding with a no-network classroom fallback."""
 
     def __init__(self, model_name: str, use_hf_embedding: bool = False, local_files_only: bool = True):
         self.model_name = model_name
-        self.backend_name = "hashing"
+        self.use_hf_embedding = use_hf_embedding
+        self.local_files_only = local_files_only
+        self.backend_name = "sentence-transformers" if use_hf_embedding else "hashing"
         self.model = None
-        self.status_message = "使用本地轻量检索"
-        if not use_hf_embedding:
-            return
+        self.status_message = "Hugging Face Embedding 将在首次向量化时加载" if use_hf_embedding else "使用本地轻量检索"
+
+    def _ensure_model(self) -> bool:
+        if not self.use_hf_embedding:
+            return False
+        if self.model is not None:
+            return True
         try:
             from sentence_transformers import SentenceTransformer
 
-            self.model = SentenceTransformer(model_name, local_files_only=local_files_only)
+            self.model = SentenceTransformer(self.model_name, local_files_only=self.local_files_only)
             self.backend_name = "sentence-transformers"
             self.status_message = "使用 Hugging Face Embedding"
+            return True
         except Exception as exc:
             self.model = None
+            self.backend_name = "hashing"
             self.status_message = f"Hugging Face 模型未就绪，已自动使用本地轻量检索：{exc.__class__.__name__}"
+            return False
 
     def encode(self, texts: List[str]) -> np.ndarray:
         if not texts:
             return np.zeros((0, 384), dtype="float32")
-        if self.model is not None:
-            vectors = self.model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
-            return np.asarray(vectors, dtype="float32")
+        if self._ensure_model():
+            try:
+                last_exc = None
+                for attempt in range(2):
+                    try:
+                        vectors = self.model.encode(
+                            texts,
+                            normalize_embeddings=True,
+                            show_progress_bar=False,
+                            batch_size=8,
+                        )
+                        return np.asarray(vectors, dtype="float32")
+                    except Exception as exc:
+                        last_exc = exc
+                        logger.warning("Embedding encode failed on attempt %s: %s", attempt + 1, exc)
+                raise last_exc
+            except Exception as exc:
+                self.model = None
+                self.backend_name = "hashing"
+                self.status_message = f"Hugging Face Embedding 编码失败，已自动降级为本地轻量检索：{exc.__class__.__name__}"
         return self._hashing_encode(texts)
 
     @staticmethod
@@ -49,7 +80,7 @@ class EmbeddingBackend:
         matrix = np.zeros((len(texts), dim), dtype="float32")
         for row, text in enumerate(texts):
             for token in self._tokenize(text):
-                index = hash(token) % dim
+                index = int(hashlib.md5(token.encode("utf-8")).hexdigest(), 16) % dim
                 matrix[row, index] += 1.0
             norm = math.sqrt(float(np.dot(matrix[row], matrix[row])))
             if norm > 0:
@@ -93,7 +124,11 @@ class VectorStore:
             metadata = json.loads(self.meta_path.read_text(encoding="utf-8"))
             old_backend = metadata.get("embedding_backend")
             old_model = metadata.get("embedding_model")
+            old_version = metadata.get("embedding_version")
             if old_backend != self.embedding.backend_name:
+                self.needs_rebuild = True
+                return
+            if old_backend == "hashing" and old_version != "stable-md5-v1":
                 self.needs_rebuild = True
                 return
             if self.embedding.backend_name == "sentence-transformers" and old_model != self.embedding.model_name:
@@ -122,6 +157,7 @@ class VectorStore:
             "chunk_count": len(self.chunks),
             "embedding_backend": self.embedding.backend_name,
             "embedding_model": self.embedding.model_name,
+            "embedding_version": "stable-md5-v1" if self.embedding.backend_name == "hashing" else "sentence-transformers",
         }
         self.meta_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
 

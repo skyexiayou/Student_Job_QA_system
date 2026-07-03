@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
-import sqlite3
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -23,37 +22,30 @@ class User:
 
 
 class UserStore:
-    """User data access layer: SQLite by default, switchable to MySQL via .env."""
+    """User data access layer backed by MySQL."""
 
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.backend = settings.db_backend
         self._init_schema()
 
     def _connect(self):
-        if self.backend == "mysql":
-            import pymysql
-            return pymysql.connect(
-                host=self.settings.mysql_host,
-                port=self.settings.mysql_port,
-                user=self.settings.mysql_user,
-                password=self.settings.mysql_password,
-                database=self.settings.mysql_database,
-                charset="utf8mb4",
-                cursorclass=pymysql.cursors.DictCursor,
-                autocommit=True,
-            )
-        conn = sqlite3.connect(self.settings.database_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+        import pymysql
+        return pymysql.connect(
+            host=self.settings.mysql_host,
+            port=self.settings.mysql_port,
+            user=self.settings.mysql_user,
+            password=self.settings.mysql_password,
+            database=self.settings.mysql_database,
+            charset="utf8mb4",
+            cursorclass=pymysql.cursors.DictCursor,
+            autocommit=True,
+        )
 
     def _execute(self, sql: str, params: Iterable[Any] = (), fetchone: bool = False, fetchall: bool = False):
-        query = sql.replace("?", "%s") if self.backend == "mysql" else sql
+        query = sql.replace("?", "%s")
         with self._connect() as conn:
             cur = conn.cursor()
             cur.execute(query, tuple(params))
-            if self.backend != "mysql":
-                conn.commit()
             if fetchone:
                 row = cur.fetchone()
                 return dict(row) if row else None
@@ -63,55 +55,42 @@ class UserStore:
             return cur.lastrowid
 
     def _init_schema(self) -> None:
-        if self.backend == "mysql":
-            self._execute(
-                """
-                CREATE TABLE IF NOT EXISTS users (
-                    id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'user primary key',
-                    username VARCHAR(64) NOT NULL UNIQUE COMMENT 'login username',
-                    email VARCHAR(128) DEFAULT NULL COMMENT 'email for login',
-                    phone VARCHAR(32) DEFAULT NULL COMMENT 'phone for login',
-                    display_name VARCHAR(64) NOT NULL COMMENT 'display name',
-                    password_hash VARCHAR(256) NOT NULL COMMENT 'PBKDF2 salted password hash',
-                    created_at VARCHAR(32) NOT NULL COMMENT 'creation time'
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='system users table'
-                """
-            )
-            self._ensure_mysql_user_columns()
-            self._execute(
-                """
-                CREATE TABLE IF NOT EXISTS auth_tokens (
-                    token VARCHAR(64) PRIMARY KEY COMMENT 'login token',
-                    user_id INT NOT NULL COMMENT 'associated user ID',
-                    created_at VARCHAR(32) NOT NULL COMMENT 'token creation time',
-                    INDEX idx_auth_tokens_user_id (user_id),
-                    CONSTRAINT fk_auth_tokens_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='auth tokens table'
-                """
-            )
-            return
         self._execute(
             """
             CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL UNIQUE,
-                email TEXT,
-                phone TEXT,
-                display_name TEXT NOT NULL,
-                password_hash TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            )
+                id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'user primary key',
+                username VARCHAR(64) NOT NULL UNIQUE COMMENT 'login username',
+                email VARCHAR(128) DEFAULT NULL COMMENT 'email for login',
+                phone VARCHAR(32) DEFAULT NULL COMMENT 'phone for login',
+                display_name VARCHAR(64) NOT NULL COMMENT 'display name',
+                password_hash VARCHAR(256) NOT NULL COMMENT 'PBKDF2 salted password hash',
+                created_at VARCHAR(32) NOT NULL COMMENT 'creation time'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='system users table'
             """
         )
-        self._ensure_sqlite_user_columns()
+        self._ensure_mysql_user_columns()
         self._execute(
             """
             CREATE TABLE IF NOT EXISTS auth_tokens (
-                token TEXT PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                created_at TEXT NOT NULL,
-                FOREIGN KEY (user_id) REFERENCES users(id)
-            )
+                token VARCHAR(64) PRIMARY KEY COMMENT 'login token',
+                user_id INT NOT NULL COMMENT 'associated user ID',
+                created_at VARCHAR(32) NOT NULL COMMENT 'token creation time',
+                INDEX idx_auth_tokens_user_id (user_id),
+                CONSTRAINT fk_auth_tokens_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='auth tokens table'
+            """
+        )
+        self._execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_goals (
+                id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'goal primary key',
+                user_id INT NOT NULL COMMENT 'associated user ID',
+                title VARCHAR(128) NOT NULL COMMENT 'goal title',
+                date VARCHAR(32) NOT NULL COMMENT 'target date',
+                created_at VARCHAR(32) NOT NULL COMMENT 'creation time',
+                INDEX idx_user_goals_user_id (user_id),
+                CONSTRAINT fk_user_goals_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='user goals table'
             """
         )
 
@@ -130,16 +109,6 @@ class UserStore:
             self._execute("CREATE INDEX idx_users_email ON users(email)")
         if "idx_users_phone" not in index_names:
             self._execute("CREATE INDEX idx_users_phone ON users(phone)")
-
-    def _ensure_sqlite_user_columns(self) -> None:
-        columns = self._execute("PRAGMA table_info(users)", fetchall=True)
-        names = {item["name"] for item in columns}
-        if "email" not in names:
-            self._execute("ALTER TABLE users ADD COLUMN email TEXT")
-        if "phone" not in names:
-            self._execute("ALTER TABLE users ADD COLUMN phone TEXT")
-        if "avatar" not in names:
-            self._execute("ALTER TABLE users ADD COLUMN avatar TEXT")
 
     @staticmethod
     def _hash_password(password: str, salt: Optional[bytes] = None) -> str:
@@ -262,3 +231,33 @@ class UserStore:
             raise ValueError("Invalid old password")
         password_hash = self._hash_password(new_password)
         self._execute("UPDATE users SET password_hash = ? WHERE id = ?", [password_hash, user_id])
+
+    def get_user_goals(self, user_id: int) -> list[dict]:
+        rows = self._execute(
+            "SELECT id, title, date, created_at FROM user_goals WHERE user_id = ? ORDER BY date ASC",
+            [user_id],
+            fetchall=True,
+        )
+        return rows
+
+    def add_user_goal(self, user_id: int, title: str, date: str) -> dict:
+        title = title.strip()
+        date = date.strip()
+        if not title or not date:
+            raise ValueError("Title and date are required")
+        goal_id = self._execute(
+            "INSERT INTO user_goals (user_id, title, date, created_at) VALUES (?, ?, ?, ?)",
+            [user_id, title, date, datetime.now().isoformat(timespec="seconds")],
+        )
+        row = self._execute(
+            "SELECT id, title, date, created_at FROM user_goals WHERE id = ?",
+            [goal_id],
+            fetchone=True,
+        )
+        return row if row else {}
+
+    def delete_user_goal(self, user_id: int, goal_id: int) -> None:
+        self._execute(
+            "DELETE FROM user_goals WHERE id = ? AND user_id = ?",
+            [goal_id, user_id],
+        )

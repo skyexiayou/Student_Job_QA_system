@@ -1,4 +1,5 @@
 from src.rag_job_qa.text_processing import clean_text, split_text
+from src.rag_job_qa.vector_store import EmbeddingBackend
 
 
 def test_clean_text_removes_extra_blank_lines():
@@ -13,3 +14,10 @@ def test_split_text_returns_chunks():
     chunks = split_text(text, chunk_size=120, overlap=20)
     assert len(chunks) > 1
     assert all(chunk.strip() for chunk in chunks)
+
+
+def test_hashing_embedding_is_stable_across_instances():
+    first = EmbeddingBackend("unused", use_hf_embedding=False).encode(["Python 后端开发"])
+    second = EmbeddingBackend("unused", use_hf_embedding=False).encode(["Python 后端开发"])
+    assert first.shape == second.shape
+    assert (first == second).all()

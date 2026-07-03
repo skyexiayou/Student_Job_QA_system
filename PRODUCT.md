@@ -1,37 +1,123 @@
-# Product
+# 大学生求职岗位知识问答系统产品说明
 
-## Register
+## 产品定位
 
-product
+大学生求职岗位知识问答系统是一款面向校园求职场景的 RAG 智能问答应用。系统围绕岗位认知、简历优化、面试准备、求职流程和行业信息等内容，帮助学生把分散的求职资料转化为可检索、可追溯、可对话的知识服务。
 
-## Users
+它不是通用聊天机器人，也不是单纯的文档管理工具，而是一个结合知识库检索、岗位分类、来源引用、模拟面试和个人求职目标管理的学习型求职助手。
 
-College students preparing for internships, campus recruitment, resumes, interviews, and offer decisions. They use the system in study or lab settings, often while uploading school/employer materials and asking practical job-search questions.
+## 目标用户
 
-## Product Purpose
+主要用户是正在准备实习、校园招聘、简历投递、面试和 offer 选择的大学生。
 
-This product is a RAG-powered job-search knowledge assistant. It helps students ask career questions, search uploaded knowledge-base material, review sources, explore job roles, and practice interview answers. Success means students can find credible, structured guidance quickly without feeling lost in scattered documents.
+典型使用者可能处在以下状态：
 
-## Brand Personality
+- 不清楚不同岗位的工作内容、能力要求和学习路径；
+- 手里有课程资料、企业宣讲材料、岗位 JD 或求职攻略，但难以快速定位重点；
+- 需要根据自己的专业背景准备简历、项目介绍和面试回答；
+- 希望在实验室、宿舍或校园网环境中快速部署并与同学共同演示使用。
 
-Calm, credible, focused. The interface should feel like a dependable campus career assistant: clear enough for repeated use, friendly enough for anxious job seekers, and polished enough for a production-practice project.
+## 核心价值
 
-## Anti-references
+系统的核心价值是让求职知识“找得到、看得懂、用得上、可追溯”。
 
-Avoid generic SaaS landing-page styling, decorative card grids, excessive gradients, washed-out low-contrast text, and playful visuals that make career guidance feel less trustworthy. Do not make the product look like a marketing homepage; the working app is the product.
+- 找得到：支持上传 PDF、TXT、Markdown 等文档并构建向量索引，用户可以通过自然语言提问检索相关内容。
+- 看得懂：回答以中文结构化呈现，优先输出步骤、要点和可执行建议。
+- 用得上：围绕岗位问答、简历指导、面试练习和求职流程提供面向行动的建议。
+- 可追溯：回答中展示参考来源，帮助用户判断答案依据，减少凭空生成和误导。
 
-## Design Principles
+## 主要功能
 
-Prioritize the next useful action on every screen.
+### 用户与个人中心
 
-Make knowledge feel traceable by keeping source, document, and answer surfaces legible and easy to scan.
+- 支持用户注册、登录和退出；
+- 支持修改个人信息、联系方式、头像和密码；
+- 支持添加、查看和删除求职目标，并显示目标倒计时；
+- 用户会话、资料和历史记录按账号隔离。
 
-Support nervous users with calm hierarchy, clear states, and predictable controls.
+### RAG 知识问答
 
-Keep the app shell stable so students can move between chat, documents, jobs, and interview practice without relearning the interface.
+- 支持多轮求职问答；
+- 支持流式输出，让用户在生成过程中即时看到回答；
+- 根据知识库检索结果生成答案，并在回答末尾标明参考来源；
+- 支持回答缓存，提高重复问题的响应速度；
+- 支持按岗位分类过滤检索范围，提高答案相关性。
 
-Use visual polish to clarify workflows, not to decorate them.
+### 知识库管理
 
-## Accessibility & Inclusion
+- 支持上传求职资料、岗位说明、企业材料和学习文档；
+- 支持文档解析、分块、向量化和索引重建；
+- 支持文档列表、分页、搜索、分类筛选、预览和删除；
+- 内置基础知识文档，可在首次启动时自动构建索引；
+- 支持重复文件检测和上传大小限制，降低无效入库。
 
-Target WCAG AA contrast for text and controls. Preserve reduced-motion preferences, make focus states visible, avoid color-only meaning, and keep dense Chinese text readable on laptop and mobile screens.
+### 岗位助手
+
+- 按岗位方向组织问题和文档，例如前端、后端、算法、产品等求职方向；
+- 用户选择岗位后，可以围绕岗位要求、技能准备、学习路线、项目包装等问题继续追问；
+- 系统会优先检索该岗位分类下的知识材料，使回答更聚焦。
+
+### 模拟面试
+
+- 提供 AI 面试官场景；
+- 支持学生输入自我介绍、项目经历或问题回答；
+- AI 会先给出简短点评，再提出下一轮追问；
+- 会话记录可以进入历史列表，方便复盘。
+
+### 知识图谱
+
+- 支持展示岗位分类、文档、技能、职位等节点及其关系；
+- 支持关键词搜索图谱节点；
+- 支持按岗位分类筛选图谱内容；
+- 当 Neo4j 未连接时，系统可退化为基于本地知识库的分类与文档图谱，保证基础演示可用。
+
+### 语音能力
+
+- 支持语音识别输入；
+- 支持流式语音识别 WebSocket；
+- 支持浏览器语音朗读回答，适合面试练习和演示场景。
+
+## 典型使用流程
+
+1. 学生注册并登录系统。
+2. 在知识文档页面上传岗位 JD、面试题、企业资料或课程整理文档。
+3. 系统解析文档并重建知识库索引。
+4. 学生在知识问答页面提出问题，例如“后端开发实习需要准备哪些项目？”。
+5. 系统检索相关资料，生成结构化回答并展示参考来源。
+6. 学生切换到岗位助手或模拟面试页面，围绕特定岗位继续练习。
+7. 学生在历史记录中查看、重命名或删除过往会话。
+
+## 产品体验原则
+
+- 清晰优先：页面应直接服务于提问、上传、检索、查看来源和继续追问。
+- 可信优先：所有知识型回答都应尽量绑定来源，资料不足时明确说明不确定。
+- 行动优先：面向大学生输出可执行建议，而不是空泛鼓励。
+- 稳定优先：登录、会话、知识库和问答流程要适合反复演示和课堂验收。
+- 中文友好：界面、提示、回答结构和长文本阅读都应适配中文语境。
+
+## 回答边界
+
+系统应避免以下行为：
+
+- 编造不存在的岗位要求、薪资数据、公司政策或录用结论；
+- 把示例项目经历包装成用户真实经历；
+- 在资料不足时给出过度确定的判断；
+- 用营销化、娱乐化或过度夸张的语气影响求职指导的可信度；
+- 只给大段笼统文字，而不提供步骤、清单或可执行建议。
+
+## 技术与数据基础
+
+系统后端基于 FastAPI 提供接口服务，前端使用单页应用承载交互。知识检索采用文档解析、文本分块、Embedding 向量化和相似度召回。大模型默认可对接兼容 OpenAI 接口的模型服务，例如通义千问兼容接口。用户数据和会话数据由本地存储或数据库模块管理，知识图谱能力可接入 Neo4j。
+
+系统支持在本地或校园网环境部署，适合生产实习、课程设计和项目答辩演示。
+
+## 成功指标
+
+一个可用的版本应满足以下标准：
+
+- 学生能够独立完成注册、登录、上传资料、提问和查看来源；
+- 常见求职问题能够在数秒内返回结构化答案；
+- 上传文档后，相关问题可以检索到新资料；
+- 历史会话、岗位助手、模拟面试和知识文档页面能够稳定切换；
+- 在缺少外部组件时，系统仍能通过本地知识库完成基础演示；
+- 回答内容可信、克制、实用，能够支撑学生下一步准备。

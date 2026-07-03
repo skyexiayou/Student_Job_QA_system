@@ -12,9 +12,14 @@ SUPPORTED_SUFFIXES = {".txt", ".md", ".markdown", ".pdf", ".docx", ".xlsx"}
 
 
 def clean_text(text: str) -> str:
-    """Normalize whitespace and remove noisy control characters."""
+    """Normalize whitespace and remove common parser noise."""
     text = text.replace("\u3000", " ")
     text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text)
+    text = re.sub(r"!\[[^\]]*]\([^)]*\)", " ", text)
+    text = re.sub(r"\[([^\]]+)]\([^)]*\)", r"\1", text)
+    text = re.sub(r"^#{1,6}\s*", "", text, flags=re.M)
+    text = re.sub(r"^\s*(?:[-*_]\s*){3,}$", "", text, flags=re.M)
+    text = re.sub(r"^\s*(?:第\s*\d+\s*页|Page\s+\d+)(?:\s*/\s*\d+)?\s*$", "", text, flags=re.I | re.M)
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
     lines = [line.strip() for line in text.splitlines()]
@@ -93,12 +98,12 @@ def read_document(path: Path) -> str:
 
 
 def split_text(text: str, chunk_size: int = 650, overlap: int = 100) -> List[str]:
-    """Split by semantic separators first, then enforce a fixed length window."""
+    """Split by semantic separators first, then enforce a fixed-length window."""
     text = clean_text(text)
     if not text:
         return []
 
-    separators = ["\n\n", "\n", "。", "！", "？", "；", ";"]
+    separators = ["\n\n", "\n", "。", "；", "，", "、", ";", "."]
     units = [text]
     for sep in separators:
         next_units: List[str] = []
@@ -107,7 +112,7 @@ def split_text(text: str, chunk_size: int = 650, overlap: int = 100) -> List[str
                 next_units.append(unit)
                 continue
             parts = [part.strip() for part in unit.split(sep) if part.strip()]
-            if sep in {"。", "！", "？", "；", ";"}:
+            if sep in {"。", "；", "，", "、", ";", "."}:
                 parts = [part + sep for part in parts]
             next_units.extend(parts or [unit])
         units = next_units

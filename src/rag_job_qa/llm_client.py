@@ -1,66 +1,89 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import asyncio
 import json
-from typing import Dict, Iterable, List
+import os
+from typing import Any, Dict, Iterable, List, Optional
 
-try:
-    import requests
-except Exception:  # pragma: no cover - requests 是可选依赖，缺失时走离线兜底
-    requests = None
+import httpx
 
 from .config import Settings
 
 
-DASHSCOPE_OPENAI_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-
-
 class LLMClient:
-    """OpenAI-compatible Qwen client with a local fallback for internship demos."""
-
     def __init__(self, settings: Settings):
         self.settings = settings
+
+    def _headers(self, stream: bool = False) -> dict:
+        headers = {"Content-Type": "application/json"}
+        if self.settings.api_key:
+            headers["Authorization"] = f"Bearer {self.settings.api_key}"
+        return headers
+
+    def _client(self) -> httpx.AsyncClient:
+        timeout = httpx.Timeout(10, read=self.settings.request_timeout, write=10, pool=10)
+        limits = httpx.Limits(max_connections=10, max_keepalive_connections=5)
+        return httpx.AsyncClient(timeout=timeout, limits=limits)
+
+    def _candidate_base_urls(self) -> Iterable[str]:
+        yield self.settings.base_url
+        if "dashscope" in self.settings.base_url.lower():
+            yield "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+    def _fallback_answer(self, messages: List[Dict[str, str]], reason: str) -> str:
+        question = messages[-1]["content"] if messages else ""
+        return (
+            "当前在线大模型暂时不可用，已切换为本地兜底回答。"
+            "我会先根据已检索到的知识文档给出求职建议；如果你需要更完整的生成式回答，"
+            "请检查 API Key、Base URL、模型名和网络连接是否正确。\n\n"
+            "建议你围绕问题补充岗位方向、目标城市、简历背景或面试场景，我可以继续帮你梳理可执行步骤。"
+        )
+
+    async def aclose(self) -> None:
+        return None
+
+    def _chunk_text(self, text: str, chunk_size: int = 15) -> Iterable[str]:
+        for i in range(0, len(text), chunk_size):
+            yield text[i:i + chunk_size]
 
     def chat(
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.2,
         top_p: float = 0.9,
-        max_tokens: int = 1000,
+        max_tokens: int | None = None,
     ) -> str:
         if not self.settings.api_key or not self.settings.base_url:
             if self.settings.allow_llm_fallback:
-                return self._fallback_answer(messages, "未检测到 Qwen API Key 或 Base URL")
-            raise RuntimeError("未配置 Qwen API Key 或 Base URL")
+                return self._fallback_answer(messages, "Qwen API Key or Base URL not detected")
+            raise RuntimeError("Qwen API Key or Base URL not configured")
         if requests is None:
             if self.settings.allow_llm_fallback:
-                return self._fallback_answer(messages, "当前环境未安装 requests")
-            raise RuntimeError("当前环境未安装 requests，无法调用在线大模型")
+                return self._fallback_answer(messages, "requests not installed in current environment")
+            raise RuntimeError("requests not installed in current environment, cannot call online LLM")
 
         payload = {
             "model": self.settings.model_name,
             "messages": messages,
             "temperature": temperature,
             "top_p": top_p,
-            "max_tokens": max_tokens,
+            "max_tokens": max_tokens or self.settings.llm_max_tokens,
         }
-        try:
-            response = self._post_chat(payload, stream=False)
-            data = response.json()
-            return data["choices"][0]["message"]["content"].strip()
-        except Exception as exc:
-            if self.settings.allow_llm_fallback:
-                return self._fallback_answer(messages, f"在线模型调用失败：{exc}")
-            raise
+        response = self._post_chat(payload, stream=False)
+        response.encoding = "utf-8"
+        data = response.json()
+        return data["choices"][0]["message"]["content"].strip()
 
     def stream_chat(
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.2,
         top_p: float = 0.9,
-        max_tokens: int = 1000,
+        max_tokens: int | None = None,
     ) -> Iterable[str]:
         if not self.settings.api_key or not self.settings.base_url or requests is None:
-            fallback = self._fallback_answer(messages, "在线流式模型不可用")
+            fallback = self._fallback_answer(messages, "Online streaming model unavailable")
             yield from self._chunk_text(fallback)
             return
 
@@ -69,41 +92,107 @@ class LLMClient:
             "messages": messages,
             "temperature": temperature,
             "top_p": top_p,
-            "max_tokens": max_tokens,
+            "max_tokens": max_tokens or self.settings.llm_max_tokens,
             "stream": True,
         }
-        try:
-            with self._post_chat(payload, stream=True) as response:
-                for raw_line in response.iter_lines(decode_unicode=True):
-                    if not raw_line:
-                        continue
-                    line = raw_line.strip()
-                    if line.startswith("data:"):
-                        line = line[5:].strip()
-                    if line == "[DONE]":
-                        break
-                    try:
-                        data = json.loads(line)
-                        delta = data["choices"][0].get("delta", {}).get("content", "")
-                        if delta:
-                            yield delta
-                    except Exception:
-                        continue
-        except Exception as exc:
-            if self.settings.allow_llm_fallback:
-                fallback = self._fallback_answer(messages, f"在线流式模型调用失败：{exc}")
-                yield from self._chunk_text(fallback)
+        headers = self._headers(stream=True)
+        errors: list[Exception] = []
+        for base_url in self._candidate_base_urls():
+            url = f"{base_url.rstrip('/')}/chat/completions"
+            try:
+                with requests.post(
+                    url,
+                    json=payload,
+                    headers=headers,
+                    stream=True,
+                    timeout=(10, self.settings.request_timeout),
+                ) as response:
+                    response.raise_for_status()
+                    for raw_line in response.iter_lines():
+                        line = (raw_line or b"").decode("utf-8").strip()
+                        if not line:
+                            continue
+                        if line.startswith("data:"):
+                            line = line[5:].strip()
+                        if line == "[DONE]":
+                            return
+                        try:
+                            data = json.loads(line)
+                            delta = data["choices"][0].get("delta", {}).get("content", "")
+                            if delta:
+                                yield delta
+                        except Exception:
+                            continue
                 return
-            raise
+            except Exception as exc:
+                errors.append(exc)
+                continue
+        if self.settings.allow_llm_fallback:
+            fallback = self._fallback_answer(messages, f"Online streaming model call failed: {'; '.join(str(item) for item in errors[-2:])}")
+            yield from self._chunk_text(fallback)
+            return
+        raise RuntimeError("; ".join(str(item) for item in errors[-2:]))
+
+    async def astream_chat(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.2,
+        top_p: float = 0.9,
+        max_tokens: int | None = None,
+    ):
+        if not self.settings.api_key or not self.settings.base_url:
+            fallback = self._fallback_answer(messages, "Online streaming model unavailable")
+            for chunk in self._chunk_text(fallback):
+                yield chunk
+                await asyncio.sleep(0)
+            return
+
+        payload = {
+            "model": self.settings.model_name,
+            "messages": messages,
+            "temperature": temperature,
+            "top_p": top_p,
+            "max_tokens": max_tokens or self.settings.llm_max_tokens,
+            "stream": True,
+        }
+        errors: list[Exception] = []
+        headers = self._headers(stream=True)
+        for base_url in self._candidate_base_urls():
+            url = f"{base_url.rstrip('/')}/chat/completions"
+            try:
+                client = self._client()
+                async with client.stream("POST", url, json=payload, headers=headers) as response:
+                    response.raise_for_status()
+                    async for raw_line in response.aiter_lines():
+                        line = (raw_line or "").strip()
+                        if not line:
+                            continue
+                        if line.startswith("data:"):
+                            line = line[5:].strip()
+                        if line == "[DONE]":
+                            return
+                        try:
+                            data = json.loads(line)
+                            delta = data["choices"][0].get("delta", {}).get("content", "")
+                            if delta:
+                                yield delta
+                        except Exception:
+                            continue
+                return
+            except Exception as exc:
+                errors.append(exc)
+                continue
+        if self.settings.allow_llm_fallback:
+            fallback = self._fallback_answer(messages, f"Online streaming model call failed: {'; '.join(str(item) for item in errors[-2:])}")
+            for chunk in self._chunk_text(fallback):
+                yield chunk
+                await asyncio.sleep(0)
+            return
+        raise RuntimeError("; ".join(str(item) for item in errors[-2:]))
 
     def _post_chat(self, payload: dict, stream: bool):
-        """Call configured base_url; retry official DashScope URL when Maas SSL endpoint fails."""
         assert requests is not None
-        headers = {
-            "Authorization": f"Bearer {self.settings.api_key}",
-            "Content-Type": "application/json",
-            "Accept": "text/event-stream" if stream else "application/json",
-        }
+        headers = self._headers(stream)
         errors: list[Exception] = []
         for base_url in self._candidate_base_urls():
             url = f"{base_url.rstrip('/')}/chat/completions"
@@ -116,34 +205,31 @@ class LLMClient:
                     stream=stream,
                 )
                 response.raise_for_status()
+                response.encoding = "utf-8"
                 return response
             except Exception as exc:
                 errors.append(exc)
                 continue
         raise RuntimeError("; ".join(str(item) for item in errors[-2:]))
 
-    def _candidate_base_urls(self) -> list[str]:
-        urls = [self.settings.base_url.rstrip("/")]
-        # 部分业务空间 CSV 给出的 maas.aliyuncs.com 地址在校园网环境可能 SSL EOF；
-        # Qwen 的 OpenAI 兼容调用优先兜底到 DashScope 官方兼容地址。
-        if self.settings.api_key.startswith("sk-") and DASHSCOPE_OPENAI_BASE_URL not in urls:
-            urls.append(DASHSCOPE_OPENAI_BASE_URL)
-        return urls
+    async def _apost_chat(self, payload: dict):
+        headers = self._headers(stream=False)
+        errors: list[Exception] = []
+        for base_url in self._candidate_base_urls():
+            url = f"{base_url.rstrip('/')}/chat/completions"
+            try:
+                async with self._client() as client:
+                    response = await client.post(url, json=payload, headers=headers)
+                    response.raise_for_status()
+                    return response
+            except Exception as exc:
+                errors.append(exc)
+                continue
+        raise RuntimeError("; ".join(str(item) for item in errors[-2:]))
 
-    @staticmethod
-    def _chunk_text(text: str, size: int = 8) -> Iterable[str]:
-        for index in range(0, len(text), size):
-            yield text[index : index + size]
 
-    def _fallback_answer(self, messages: List[Dict[str, str]], reason: str) -> str:
-        user_content = messages[-1]["content"] if messages else ""
-        marker = "【检索到的知识片段】"
-        context = user_content.split(marker, 1)[-1] if marker in user_content else user_content
-        compact = "\n".join(line.strip() for line in context.splitlines() if line.strip())
-        excerpt = compact[:900] or "当前知识库没有召回到足够内容。"
-        return (
-            f"【离线演示回答】当前未使用在线大模型生成，原因：{reason}\n\n"
-            "根据知识库可参考的信息，建议你先围绕岗位要求、个人经历匹配度、简历表达和面试准备四个方面梳理问题。"
-            "如果问题涉及薪资、具体政策或公司要求，需要以知识库原文和官方招聘信息为准。\n\n"
-            f"可参考片段：\n{excerpt}"
-        )
+requests = None
+try:
+    import requests
+except ImportError:
+    pass

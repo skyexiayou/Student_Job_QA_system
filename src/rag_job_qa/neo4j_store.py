@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import re
 import json
+import socket
 from dataclasses import dataclass
+from urllib.parse import urlparse
 from typing import Dict, Iterable, List, Sequence
 
 import numpy as np
@@ -18,6 +20,9 @@ ENTITY_LABELS = {
     "city": "City",
     "education": "Education",
 }
+
+CRUD_LABELS = {"JobCategory", "Position", "Company", "Skill", "Salary", "City", "Education", "Document"}
+CRUD_REL_TYPES = {"RELATED_TO", "CONTAINS", "MENTIONS", "REQUIRES", "OFFERS", "LOCATED_IN", "REQUIRES_EDUCATION"}
 
 
 JOB_CATEGORIES = [
@@ -112,8 +117,10 @@ class Neo4jKnowledgeStore:
         self.settings = settings
         self.enabled = bool(settings.neo4j_uri and settings.neo4j_password)
         self.driver = None
+        self.last_error = ""
         self.extractor = JobEntityExtractor()
         if not self.enabled:
+            self.last_error = "NEO4J_URI or NEO4J_PASSWORD is empty"
             return
         try:
             from neo4j import GraphDatabase
@@ -123,13 +130,60 @@ class Neo4jKnowledgeStore:
                 auth=(settings.neo4j_user, settings.neo4j_password),
             )
             self.driver.verify_connectivity()
-        except Exception:
+        except Exception as exc:
             self.driver = None
             self.enabled = False
+            self.last_error = str(exc)
 
     def close(self) -> None:
         if self.driver is not None:
             self.driver.close()
+
+    def diagnostics(self) -> dict:
+        parsed = urlparse(self.settings.neo4j_uri or "")
+        host = parsed.hostname or ""
+        port = parsed.port or (7687 if parsed.scheme in {"bolt", "neo4j"} else None)
+        socket_open = False
+        socket_error = ""
+        if host and port:
+            try:
+                with socket.create_connection((host, int(port)), timeout=1.5):
+                    socket_open = True
+            except OSError as exc:
+                socket_error = str(exc)
+        driver_ok = False
+        driver_error = self.last_error
+        if self.driver is not None:
+            try:
+                self.driver.verify_connectivity()
+                driver_ok = True
+            except Exception as exc:
+                driver_error = str(exc)
+                self.last_error = driver_error
+                self.enabled = False
+        return {
+            "enabled": self.enabled,
+            "driver_ok": driver_ok,
+            "uri": self.settings.neo4j_uri,
+            "database": self.settings.neo4j_database,
+            "host": host,
+            "port": port,
+            "socket_open": socket_open,
+            "socket_error": socket_error,
+            "last_error": driver_error,
+            "advice": self._diagnostic_advice(socket_open, driver_error),
+        }
+
+    @staticmethod
+    def _diagnostic_advice(socket_open: bool, driver_error: str) -> str:
+        if not socket_open:
+            return "Neo4j Bolt port is not listening. Start the DBMS in Neo4j Desktop or run neo4j.bat console/start."
+        lowered = (driver_error or "").lower()
+        if "authentication" in lowered or "unauthorized" in lowered:
+            return "Neo4j is reachable, but username/password is wrong. Check NEO4J_USER and NEO4J_PASSWORD in .env."
+        if driver_error:
+            return "Neo4j is reachable, but the Python driver failed. Check database name, auth, and Neo4j logs."
+        return "Neo4j connection is healthy."
 
     def rebuild(self, chunks: Iterable[DocumentChunk], vectors: np.ndarray | None) -> None:
         if not self.enabled or self.driver is None or vectors is None:
@@ -175,19 +229,27 @@ class Neo4jKnowledgeStore:
                 top_k,
                 category,
             )
-        return [
-            RetrievedChunk(
-                chunk=DocumentChunk(
-                    chunk_id=row["chunk_id"],
-                    source=row["source"],
-                    title=row["title"],
-                    content=row["content"],
-                    metadata=self._loads_metadata(row.get("metadata_json")),
-                ),
-                score=float(row["score"]),
+        threshold = float(getattr(self.settings, "similarity_threshold", 0) or 0)
+        results: List[RetrievedChunk] = []
+        for row in rows:
+            score = float(row["score"])
+            if threshold > 0 and score < threshold:
+                continue
+            metadata = self._loads_metadata(row.get("metadata_json"))
+            metadata["retrieval_mode"] = "neo4j_vector_graph"
+            results.append(
+                RetrievedChunk(
+                    chunk=DocumentChunk(
+                        chunk_id=row["chunk_id"],
+                        source=row["source"],
+                        title=row["title"],
+                        content=row["content"],
+                        metadata=metadata,
+                    ),
+                    score=score,
+                )
             )
-            for row in rows
-        ]
+        return results
 
     def graph_data(self, category: str = "", limit: int = 240) -> dict:
         if not self.enabled or self.driver is None:
@@ -212,6 +274,39 @@ class Neo4jKnowledgeStore:
             return []
         with self.driver.session(database=self.settings.neo4j_database) as session:
             return session.execute_read(self._search_nodes, keyword, category, limit)
+
+    def create_node(self, label: str, properties: dict) -> dict:
+        self._require_enabled()
+        label = self._safe_label(label)
+        props = dict(properties or {})
+        name = str(props.get("name") or props.get("title") or props.get("key") or "").strip()
+        if not name:
+            raise ValueError("节点必须包含 name/title/key")
+        props.setdefault("name", name)
+        props["type"] = label
+        with self.driver.session(database=self.settings.neo4j_database) as session:
+            return session.execute_write(self._create_node, label, props)
+
+    def update_node(self, node_id: str, properties: dict) -> dict:
+        self._require_enabled()
+        with self.driver.session(database=self.settings.neo4j_database) as session:
+            return session.execute_write(self._update_node, node_id, dict(properties or {}))
+
+    def delete_node(self, node_id: str) -> None:
+        self._require_enabled()
+        with self.driver.session(database=self.settings.neo4j_database) as session:
+            session.execute_write(self._delete_node, node_id)
+
+    def create_relation(self, source_id: str, target_id: str, rel_type: str, properties: dict | None = None) -> dict:
+        self._require_enabled()
+        rel_type = self._safe_rel_type(rel_type)
+        with self.driver.session(database=self.settings.neo4j_database) as session:
+            return session.execute_write(self._create_relation, source_id, target_id, rel_type, dict(properties or {}))
+
+    def delete_relation(self, relation_id: str) -> None:
+        self._require_enabled()
+        with self.driver.session(database=self.settings.neo4j_database) as session:
+            session.execute_write(self._delete_relation, relation_id)
 
     def enrich(self, retrieved: List[RetrievedChunk]) -> List[RetrievedChunk]:
         if not retrieved or not self.enabled or self.driver is None:
@@ -240,6 +335,24 @@ class Neo4jKnowledgeStore:
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name or ""):
             return "job_chunk_embedding_index"
         return name
+
+    def _require_enabled(self) -> None:
+        if not self.enabled or self.driver is None:
+            raise RuntimeError("Neo4j is not enabled or not connected")
+
+    @staticmethod
+    def _safe_label(label: str) -> str:
+        label = (label or "").strip()
+        if label not in CRUD_LABELS:
+            raise ValueError(f"Unsupported node label: {label}")
+        return label
+
+    @staticmethod
+    def _safe_rel_type(rel_type: str) -> str:
+        rel_type = (rel_type or "").strip().upper()
+        if rel_type not in CRUD_REL_TYPES:
+            raise ValueError(f"Unsupported relation type: {rel_type}")
+        return rel_type
 
     @staticmethod
     def _loads_metadata(value) -> dict[str, str]:
@@ -380,7 +493,7 @@ class Neo4jKnowledgeStore:
                    score AS score
             ORDER BY score DESC
             """,
-            index_name=self.settings.neo4j_vector_index,
+            index_name=self._index_identifier(self.settings.neo4j_vector_index),
             top_k=max(1, int(top_k) * 4) if category else max(1, int(top_k)),
             embedding=embedding,
             category=category,
@@ -525,3 +638,75 @@ class Neo4jKnowledgeStore:
             limit=max(1, min(int(limit or 30), 100)),
         )
         return [dict(record) for record in result]
+
+    @staticmethod
+    def _create_node(tx, label: str, properties: dict) -> dict:
+        key_prop = "key" if label == "JobCategory" and properties.get("key") else "name"
+        result = tx.run(
+            f"""
+            MERGE (n:{label} {{{key_prop}: $identity}})
+            SET n += $properties
+            RETURN elementId(n) AS id,
+                   coalesce(n.name, n.title, n.source, n.key) AS label,
+                   labels(n)[0] AS type,
+                   properties(n) AS properties
+            """,
+            identity=properties[key_prop],
+            properties=properties,
+        )
+        return dict(result.single())
+
+    @staticmethod
+    def _update_node(tx, node_id: str, properties: dict) -> dict:
+        result = tx.run(
+            """
+            MATCH (n)
+            WHERE elementId(n) = $node_id
+            SET n += $properties
+            RETURN elementId(n) AS id,
+                   coalesce(n.name, n.title, n.source, n.key) AS label,
+                   labels(n)[0] AS type,
+                   properties(n) AS properties
+            """,
+            node_id=node_id,
+            properties=properties,
+        )
+        record = result.single()
+        if not record:
+            raise ValueError("Node not found")
+        return dict(record)
+
+    @staticmethod
+    def _delete_node(tx, node_id: str) -> None:
+        result = tx.run("MATCH (n) WHERE elementId(n) = $node_id DETACH DELETE n RETURN count(n) AS count", node_id=node_id)
+        if not result.single()["count"]:
+            raise ValueError("Node not found")
+
+    @staticmethod
+    def _create_relation(tx, source_id: str, target_id: str, rel_type: str, properties: dict) -> dict:
+        result = tx.run(
+            f"""
+            MATCH (source), (target)
+            WHERE elementId(source) = $source_id AND elementId(target) = $target_id
+            MERGE (source)-[r:{rel_type}]->(target)
+            SET r += $properties
+            RETURN elementId(r) AS id,
+                   elementId(source) AS source,
+                   elementId(target) AS target,
+                   type(r) AS type,
+                   properties(r) AS properties
+            """,
+            source_id=source_id,
+            target_id=target_id,
+            properties=properties,
+        )
+        record = result.single()
+        if not record:
+            raise ValueError("Source or target node not found")
+        return dict(record)
+
+    @staticmethod
+    def _delete_relation(tx, relation_id: str) -> None:
+        result = tx.run("MATCH ()-[r]-() WHERE elementId(r) = $relation_id DELETE r RETURN count(r) AS count", relation_id=relation_id)
+        if not result.single()["count"]:
+            raise ValueError("Relation not found")

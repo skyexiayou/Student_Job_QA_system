@@ -47,6 +47,10 @@ class RAGAnswer:
                 "title": item.chunk.title,
                 "score": round(item.score, 4),
                 "content": item.chunk.content[:360],
+                "category": item.chunk.metadata.get("job_category", ""),
+                "retrieval_mode": item.chunk.metadata.get("retrieval_mode", ""),
+                "graph_entities": item.chunk.metadata.get("graph_entities", ""),
+                "path": item.chunk.metadata.get("path", ""),
             }
             for item in self.sources
         ]

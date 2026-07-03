@@ -1,0 +1,8 @@
+﻿id,5814537
+apiKey,sk-ws-H.RYDLRIP.vvbk.MEYCIQDci7WGLYsjC4XEVu5IkyhaOS9S-2xGIv7C1SmLFDpfpgIhAKpsHCAkxzXUIO-YgZ0VlyA1JsQ5rTodm651BMTaRAwD
+apiHost,llm-k1cjm3k22tzah46q.cn-beijing.maas.aliyuncs.com
+openAiCompatible,https://llm-k1cjm3k22tzah46q.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+dashScope,https://llm-k1cjm3k22tzah46q.cn-beijing.maas.aliyuncs.com/api/v1
+description,语音
+workspaceName,默认业务空间
+workspaceId,llm-k1cjm3k22tzah46q

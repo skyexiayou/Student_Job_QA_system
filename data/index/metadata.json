@@ -1,5 +1,6 @@
 {
-  "chunk_count": 52,
+  "chunk_count": 2281,
   "embedding_backend": "sentence-transformers",
-  "embedding_model": "./data/models/paraphrase-multilingual-MiniLM-L12-v2"
+  "embedding_model": "./data/models/paraphrase-multilingual-MiniLM-L12-v2",
+  "embedding_version": "sentence-transformers"
 }

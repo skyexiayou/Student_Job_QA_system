@@ -52,7 +52,9 @@ class UserStore:
             if fetchall:
                 rows = cur.fetchall()
                 return [dict(row) for row in rows]
-            return cur.lastrowid
+            if query.lstrip().upper().startswith("INSERT"):
+                return cur.lastrowid
+            return cur.rowcount
 
     def _init_schema(self) -> None:
         self._execute(
@@ -256,8 +258,28 @@ class UserStore:
         )
         return row if row else {}
 
-    def delete_user_goal(self, user_id: int, goal_id: int) -> None:
+    def get_user_goal(self, user_id: int, goal_id: int) -> dict | None:
+        row = self._execute(
+            "SELECT id, title, date, created_at FROM user_goals WHERE id = ? AND user_id = ?",
+            [goal_id, user_id],
+            fetchone=True,
+        )
+        return row
+
+    def update_user_goal(self, user_id: int, goal_id: int, title: str, date: str) -> dict | None:
+        title = title.strip()
+        date = date.strip()
+        if not title or not date:
+            raise ValueError("Title and date are required")
         self._execute(
+            "UPDATE user_goals SET title = ?, date = ? WHERE id = ? AND user_id = ?",
+            [title, date, goal_id, user_id],
+        )
+        return self.get_user_goal(user_id, goal_id)
+
+    def delete_user_goal(self, user_id: int, goal_id: int) -> bool:
+        affected = self._execute(
             "DELETE FROM user_goals WHERE id = ? AND user_id = ?",
             [goal_id, user_id],
         )
+        return bool(affected)

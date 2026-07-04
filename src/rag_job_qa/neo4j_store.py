@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import json
 import socket
+from collections import defaultdict
 from dataclasses import dataclass
 from urllib.parse import urlparse
 from typing import Dict, Iterable, List, Sequence
@@ -112,34 +113,134 @@ class JobEntityExtractor:
                 target[(kind, word)] = JobEntity(kind, word)
 
 
+JOB_CATEGORIES = [
+    {"key": "backend", "name": "后端开发", "work": "搭建服务接口、业务系统、分布式高并发后端", "skills": "Java/Go/C++、数据库、中间件、网络、操作系统"},
+    {"key": "frontend", "name": "前端开发", "work": "网页、小程序、跨端页面、数据可视化交互开发", "skills": "Vue/React/TS、工程化、渲染、多端适配"},
+    {"key": "client", "name": "客户端开发", "work": "安卓/iOS 原生 App、Windows 桌面软件开发", "skills": "Kotlin/Swift、QT/Electron、移动端适配"},
+    {"key": "embedded", "name": "嵌入式底层开发", "work": "单片机、Linux 驱动、车载、物联网硬件软件开发", "skills": "C 语言、内核、驱动、硬件通信协议"},
+    {"key": "ai", "name": "AI 算法", "work": "CV/NLP/大模型、推荐、AIGC 模型研发与落地", "skills": "深度学习、PyTorch、特征工程、向量数据库"},
+    {"key": "bigdata", "name": "大数据开发", "work": "数据仓库、实时离线计算、数据平台建设", "skills": "Spark/Flink/Hive、SQL、数据建模"},
+    {"key": "cloud", "name": "云计算云原生", "work": "云平台、容器、K8s、自动化运维、服务稳定性", "skills": "Docker/K8s、Go、CI/CD、监控容灾"},
+    {"key": "security", "name": "网络安全", "work": "渗透攻防、安全工具开发、逆向、等保合规防护", "skills": "漏洞原理、逆向、WAF、等保规范"},
+    {"key": "testing", "name": "测试体系", "work": "功能验证、自动化脚本、性能压测、自研测试平台", "skills": "测试框架、接口自动化、压测工具、SQL"},
+    {"key": "game", "name": "游戏开发", "work": "游戏服务器、客户端、引擎、NPC 对战 AI 开发", "skills": "Unity/UE、网络编程、图形学、游戏服务"},
+    {"key": "ic", "name": "芯片 IC 开发", "work": "数字芯片逻辑设计、功能验证、FPGA 开发", "skills": "Verilog、数字电路、时序、仿真验证"},
+    {"key": "nondev", "name": "技术非开发岗", "work": "技术产品、售前解决方案、技术支持、开发者运营", "skills": "需求梳理、方案撰写、客户对接、基础技术"},
+]
+
+CATEGORY_KEYWORDS = {
+    "backend": ["后端", "服务端", "java", "golang", "go语言", "c++", "spring", "spring boot", "fastapi", "django", "接口", "高并发", "微服务", "redis", "mysql", "postgresql", "中间件", "分布式", "网关"],
+    "frontend": ["前端", "vue", "react", "typescript", "javascript", "小程序", "可视化", "css", "html", "webpack", "vite", "node.js", "页面", "浏览器", "组件"],
+    "client": ["客户端", "android", "ios", "安卓", "kotlin", "swift", "qt", "electron", "桌面软件", "移动端", "app开发", "鸿蒙", "flutter"],
+    "embedded": ["嵌入式", "单片机", "驱动", "linux内核", "linux 内核", "stm32", "arm", "硬件", "通信协议", "物联网", "车载", "rtos", "mcu", "传感器"],
+    "ai": ["算法", "机器学习", "深度学习", "nlp", "cv", "计算机视觉", "大模型", "推荐", "aigc", "pytorch", "tensorflow", "向量数据库", "embedding", "rag", "llm"],
+    "bigdata": ["大数据", "数仓", "数据仓库", "spark", "flink", "hive", "离线计算", "实时计算", "数据建模", "etl", "数据湖", "kafka"],
+    "cloud": ["云原生", "云计算", "kubernetes", "k8s", "docker", "devops", "ci/cd", "监控", "容灾", "sre", "运维", "容器", "服务治理"],
+    "security": ["网络安全", "安全", "渗透", "漏洞", "逆向", "waf", "等保", "攻防", "ctf", "加固", "应急响应", "代码审计"],
+    "testing": ["测试", "qa", "自动化测试", "压测", "性能测试", "测试用例", "pytest", "selenium", "jmeter", "接口测试", "质量保障", "缺陷"],
+    "game": ["游戏", "unity", "ue", "unreal", "引擎", "图形学", "npc", "游戏服务器", "关卡", "渲染", "客户端战斗"],
+    "ic": ["芯片", "ic", "fpga", "verilog", "systemverilog", "数字电路", "时序", "仿真", "验证", "eda", "rtl", "流片"],
+    "nondev": ["产品经理", "售前", "解决方案", "技术支持", "开发者运营", "需求", "客户对接", "方案撰写", "项目管理", "实施", "交付"],
+}
+
+
+def classify_job_category(text: str) -> str:
+    haystack = (text or "").lower()
+    scores = {key: 0 for key in CATEGORY_KEYWORDS}
+    for key, words in CATEGORY_KEYWORDS.items():
+        for word in words:
+            needle = word.lower()
+            if needle in haystack:
+                scores[key] += 3 if len(needle) >= 4 else 1
+    best_key, best_score = max(scores.items(), key=lambda item: item[1])
+    return best_key if best_score > 0 else "nondev"
+
+
+class JobEntityExtractor:
+    skill_words = [
+        "Python", "Java", "C++", "Go", "Vue", "React", "SQL", "MySQL", "Linux", "Docker",
+        "Kubernetes", "K8s", "Redis", "NLP", "机器学习", "深度学习", "数据分析", "FastAPI", "Spring",
+        "PyTorch", "TensorFlow", "Flink", "Spark", "Hive", "STM32", "Verilog", "JMeter", "Selenium",
+    ]
+    education_words = ["大专", "本科", "硕士", "博士", "研究生", "不限学历"]
+    city_words = ["北京", "上海", "广州", "深圳", "杭州", "南京", "成都", "武汉", "西安", "苏州", "重庆", "天津"]
+
+    def extract(self, text: str) -> List[JobEntity]:
+        entities: Dict[tuple[str, str], JobEntity] = {}
+        self._add_matches(entities, "skill", self.skill_words, text)
+        self._add_matches(entities, "education", self.education_words, text)
+        self._add_matches(entities, "city", self.city_words, text)
+        for match in re.findall(r"[\u4e00-\u9fffA-Za-z0-9]{2,18}(?:公司|集团|科技|网络|信息|有限公司)", text):
+            entities[("company", match)] = JobEntity("company", match)
+        for match in re.findall(r"[\u4e00-\u9fffA-Za-z0-9]{1,16}(?:工程师|开发|产品经理|测试|算法|运维|设计师|实习生)", text):
+            entities[("position", match)] = JobEntity("position", match)
+        for match in re.findall(r"\d+(?:-\d+)?[kK]|[\d.]+万(?:/年|每年)?|薪资面议", text):
+            entities[("salary", match)] = JobEntity("salary", match)
+        return list(entities.values())
+
+    @staticmethod
+    def _add_matches(target: Dict[tuple[str, str], JobEntity], kind: str, words: Sequence[str], text: str) -> None:
+        lower_text = text.lower()
+        for word in words:
+            if word.lower() in lower_text:
+                target[(kind, word)] = JobEntity(kind, word)
+
+
 class Neo4jKnowledgeStore:
     def __init__(self, settings):
         self.settings = settings
-        self.enabled = bool(settings.neo4j_uri and settings.neo4j_password)
+        self.configured = bool(settings.neo4j_uri and settings.neo4j_password)
+        self.enabled = self.configured
         self.driver = None
         self.last_error = ""
         self.extractor = JobEntityExtractor()
-        if not self.enabled:
+        if not self.configured:
             self.last_error = "NEO4J_URI or NEO4J_PASSWORD is empty"
             return
+        self._connect()
+
+    def _connect(self) -> bool:
+        if not self.configured:
+            self.enabled = False
+            return False
+        if self.driver is not None and self.enabled:
+            return True
         try:
             from neo4j import GraphDatabase
 
+            if self.driver is not None:
+                self.driver.close()
             self.driver = GraphDatabase.driver(
-                settings.neo4j_uri,
-                auth=(settings.neo4j_user, settings.neo4j_password),
+                self.settings.neo4j_uri,
+                auth=(self.settings.neo4j_user, self.settings.neo4j_password),
             )
             self.driver.verify_connectivity()
+            self.enabled = True
+            self.last_error = ""
+            return True
         except Exception as exc:
+            if self.driver is not None:
+                try:
+                    self.driver.close()
+                except Exception:
+                    pass
             self.driver = None
             self.enabled = False
             self.last_error = str(exc)
+            return False
+
+    def _ensure_connected(self) -> bool:
+        if self.driver is not None and self.enabled:
+            return True
+        return self._connect()
 
     def close(self) -> None:
         if self.driver is not None:
             self.driver.close()
 
     def diagnostics(self) -> dict:
+        if self.configured and (self.driver is None or not self.enabled):
+            self._connect()
         parsed = urlparse(self.settings.neo4j_uri or "")
         host = parsed.hostname or ""
         port = parsed.port or (7687 if parsed.scheme in {"bolt", "neo4j"} else None)
@@ -186,7 +287,7 @@ class Neo4jKnowledgeStore:
         return "Neo4j connection is healthy."
 
     def rebuild(self, chunks: Iterable[DocumentChunk], vectors: np.ndarray | None) -> None:
-        if not self.enabled or self.driver is None or vectors is None:
+        if not self._ensure_connected() or self.driver is None or vectors is None:
             return
         chunk_list = list(chunks)
         if len(chunk_list) != len(vectors):
@@ -220,7 +321,7 @@ class Neo4jKnowledgeStore:
             )
 
     def search(self, query: str, query_vector: np.ndarray, top_k: int, category: str = "") -> List[RetrievedChunk]:
-        if not self.enabled or self.driver is None:
+        if not self._ensure_connected() or self.driver is None:
             return []
         with self.driver.session(database=self.settings.neo4j_database) as session:
             rows = session.execute_read(
@@ -251,26 +352,27 @@ class Neo4jKnowledgeStore:
             )
         return results
 
-    def graph_data(self, category: str = "", limit: int = 240) -> dict:
-        if not self.enabled or self.driver is None:
+    def graph_data(self, category: str = "", limit: int = 120) -> dict:
+        if not self._ensure_connected() or self.driver is None:
             return {"nodes": [], "edges": [], "neo4j_enabled": False}
+        limit = self._clamp_graph_node_limit(limit)
         with self.driver.session(database=self.settings.neo4j_database) as session:
             return session.execute_read(self._graph_data, category, limit)
 
     def node_detail(self, node_id: str, relation_type: str = "") -> dict:
-        if not self.enabled or self.driver is None:
+        if not self._ensure_connected() or self.driver is None:
             return {"node": None, "relations": [], "neo4j_enabled": False}
         with self.driver.session(database=self.settings.neo4j_database) as session:
             return session.execute_read(self._node_detail, node_id, relation_type)
 
     def category_stats(self) -> list[dict]:
-        if not self.enabled or self.driver is None:
+        if not self._ensure_connected() or self.driver is None:
             return [dict(item, entity_count=0, document_count=0) for item in JOB_CATEGORIES]
         with self.driver.session(database=self.settings.neo4j_database) as session:
             return session.execute_read(self._category_stats)
 
     def search_nodes(self, keyword: str, category: str = "", limit: int = 30) -> list[dict]:
-        if not self.enabled or self.driver is None:
+        if not self._ensure_connected() or self.driver is None:
             return []
         with self.driver.session(database=self.settings.neo4j_database) as session:
             return session.execute_read(self._search_nodes, keyword, category, limit)
@@ -309,7 +411,7 @@ class Neo4jKnowledgeStore:
             session.execute_write(self._delete_relation, relation_id)
 
     def enrich(self, retrieved: List[RetrievedChunk]) -> List[RetrievedChunk]:
-        if not retrieved or not self.enabled or self.driver is None:
+        if not retrieved or not self._ensure_connected() or self.driver is None:
             return retrieved
         ids = [item.chunk.chunk_id for item in retrieved]
         with self.driver.session(database=self.settings.neo4j_database) as session:
@@ -331,13 +433,21 @@ class Neo4jKnowledgeStore:
         return enriched
 
     @staticmethod
+    def _clamp_graph_node_limit(limit: int | str | None) -> int:
+        try:
+            value = int(limit or 120)
+        except (TypeError, ValueError):
+            value = 120
+        return max(20, min(value, 240))
+
+    @staticmethod
     def _index_identifier(name: str) -> str:
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name or ""):
             return "job_chunk_embedding_index"
         return name
 
     def _require_enabled(self) -> None:
-        if not self.enabled or self.driver is None:
+        if not self._ensure_connected() or self.driver is None:
             raise RuntimeError("Neo4j is not enabled or not connected")
 
     @staticmethod
@@ -382,7 +492,7 @@ class Neo4jKnowledgeStore:
     @staticmethod
     def _replace_graph(tx, rows: List[dict], categories: List[dict]) -> None:
         tx.run("MATCH (c:Chunk) DETACH DELETE c")
-        tx.run("MATCH (d:Document) WHERE NOT (d)--() DETACH DELETE d")
+        tx.run("MATCH (d:Document) DETACH DELETE d")
         for label in ENTITY_LABELS.values():
             tx.run(f"MATCH (e:{label}) WHERE NOT (e)--() DETACH DELETE e")
         tx.run(
@@ -521,7 +631,17 @@ class Neo4jKnowledgeStore:
             OPTIONAL MATCH (n)-[*0..2]-(jc:JobCategory)
             WITH n, collect(DISTINCT jc.key) AS categories
             WHERE $category = '' OR n.key = $category OR $category IN categories
-            WITH n LIMIT $limit
+            WITH n, categories
+            ORDER BY CASE
+              WHEN n:JobCategory THEN 0
+              WHEN n:Document THEN 1
+              WHEN n:Position THEN 2
+              WHEN n:Skill THEN 3
+              ELSE 9
+            END,
+            size(categories) DESC,
+            coalesce(n.name, n.title, n.source, n.key)
+            LIMIT $limit
             OPTIONAL MATCH (n)-[r]-(m)
             WHERE m:JobCategory OR m:Position OR m:Skill OR m:Document
             WITH collect(DISTINCT n) AS base_nodes, collect(DISTINCT {source: n, rel: r, target: m}) AS rels
@@ -551,14 +671,79 @@ class Neo4jKnowledgeStore:
             }] AS edges
             """,
             category=category,
-            limit=max(20, min(int(limit or 240), 500)),
+            limit=Neo4jKnowledgeStore._clamp_graph_node_limit(limit),
         )
         record = result.single()
         if not record:
             return {"nodes": [], "edges": [], "neo4j_enabled": True}
-        nodes = {item["id"]: item for item in record["nodes"]}.values()
-        edges = {item["id"]: item for item in record["edges"]}.values()
-        return {"nodes": list(nodes), "edges": list(edges), "neo4j_enabled": True}
+        nodes = list({item["id"]: item for item in record["nodes"]}.values())[: Neo4jKnowledgeStore._clamp_graph_node_limit(limit)]
+        visible_node_ids = {item["id"] for item in nodes}
+        raw_edges = [
+            item
+            for item in {item["id"]: item for item in record["edges"]}.values()
+            if item["source"] in visible_node_ids and item["target"] in visible_node_ids
+        ]
+        edges = Neo4jKnowledgeStore._prune_display_edges(nodes, raw_edges)
+        return {"nodes": nodes, "edges": edges, "raw_edge_count": len(raw_edges), "neo4j_enabled": True}
+
+    @staticmethod
+    def _prune_display_edges(nodes: list[dict], edges: list[dict]) -> list[dict]:
+        if not edges:
+            return []
+        node_types = {item["id"]: item.get("type", "") for item in nodes}
+        priority = {"RELATED_TO": 0, "CONTAINS": 1, "REQUIRES": 2, "MENTIONS": 3, "HAS_CHUNK": 6}
+        node_caps = {"JobCategory": 44, "Position": 18, "Skill": 14, "Document": 10, "Chunk": 6}
+        max_edges = max(72, min(820, int(len(nodes) * 3.1)))
+        degree: dict[str, int] = defaultdict(int)
+        selected: list[dict] = []
+        seen_pairs: set[tuple[str, str, str]] = set()
+
+        def cap_for(node_id: str) -> int:
+            return node_caps.get(node_types.get(node_id, ""), 10)
+
+        ordered = sorted(
+            edges,
+            key=lambda item: (
+                priority.get(item.get("type", ""), 5),
+                node_types.get(item.get("source", ""), ""),
+                node_types.get(item.get("target", ""), ""),
+                item.get("id", ""),
+            ),
+        )
+        for edge in ordered:
+            source = edge.get("source")
+            target = edge.get("target")
+            if not source or not target or source == target:
+                continue
+            pair = tuple(sorted([source, target]) + [edge.get("type", "")])
+            if pair in seen_pairs:
+                continue
+            if len(selected) >= max_edges:
+                break
+            if degree[source] >= cap_for(source) or degree[target] >= cap_for(target):
+                continue
+            selected.append(edge)
+            seen_pairs.add(pair)
+            degree[source] += 1
+            degree[target] += 1
+
+        connected = {edge["source"] for edge in selected} | {edge["target"] for edge in selected}
+        for edge in ordered:
+            if len(selected) >= max_edges:
+                break
+            source = edge.get("source")
+            target = edge.get("target")
+            if not source or not target:
+                continue
+            pair = tuple(sorted([source, target]) + [edge.get("type", "")])
+            if pair in seen_pairs or (source in connected and target in connected):
+                continue
+            selected.append(edge)
+            seen_pairs.add(pair)
+            connected.add(source)
+            connected.add(target)
+
+        return selected
 
     @staticmethod
     def _node_detail(tx, node_id: str, relation_type: str) -> dict:

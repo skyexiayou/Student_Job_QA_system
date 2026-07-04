@@ -92,7 +92,7 @@ class Settings:
     memory_rounds: int = 4
     cache_size: int = 128
 
-    api_host: str = "127.0.0.1"
+    api_host: str = "0.0.0.0"
     api_port: int = 8000
 
     mysql_host: str = "127.0.0.1"
@@ -145,6 +145,8 @@ class Settings:
             graph_hops=max(1, min(int(os.getenv("GRAPH_HOPS", "2")), 2)),
             max_upload_size_mb=int(os.getenv("MAX_UPLOAD_SIZE_MB", "30")),
             memory_rounds=int(os.getenv("MEMORY_ROUNDS", "4")),
+            api_host=os.getenv("API_HOST", "0.0.0.0"),
+            api_port=int(os.getenv("API_PORT", "8000")),
             mysql_host=os.getenv("MYSQL_HOST", "127.0.0.1"),
             mysql_port=int(os.getenv("MYSQL_PORT", "3306")),
             mysql_user=os.getenv("MYSQL_USER", "root"),

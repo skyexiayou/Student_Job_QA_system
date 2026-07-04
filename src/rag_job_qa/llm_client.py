@@ -73,7 +73,10 @@ class LLMClient:
         response = self._post_chat(payload, stream=False)
         response.encoding = "utf-8"
         data = response.json()
-        return data["choices"][0]["message"]["content"].strip()
+        choice = self._first_choice(data)
+        if not choice:
+            raise RuntimeError(self._response_error_message(data, "LLM response has no choices"))
+        return choice.get("message", {}).get("content", "").strip()
 
     def stream_chat(
         self,
@@ -118,7 +121,10 @@ class LLMClient:
                             return
                         try:
                             data = json.loads(line)
-                            delta = data["choices"][0].get("delta", {}).get("content", "")
+                            choice = self._first_choice(data)
+                            if not choice:
+                                continue
+                            delta = choice.get("delta", {}).get("content", "")
                             if delta:
                                 yield delta
                         except Exception:
@@ -173,7 +179,10 @@ class LLMClient:
                             return
                         try:
                             data = json.loads(line)
-                            delta = data["choices"][0].get("delta", {}).get("content", "")
+                            choice = self._first_choice(data)
+                            if not choice:
+                                continue
+                            delta = choice.get("delta", {}).get("content", "")
                             if delta:
                                 yield delta
                         except Exception:
@@ -226,6 +235,23 @@ class LLMClient:
                 errors.append(exc)
                 continue
         raise RuntimeError("; ".join(str(item) for item in errors[-2:]))
+
+    @staticmethod
+    def _first_choice(data: dict) -> dict | None:
+        choices = data.get("choices")
+        if not isinstance(choices, list) or not choices:
+            return None
+        choice = choices[0]
+        return choice if isinstance(choice, dict) else None
+
+    @staticmethod
+    def _response_error_message(data: dict, default: str) -> str:
+        error = data.get("error")
+        if isinstance(error, dict):
+            message = error.get("message") or error.get("code")
+            if message:
+                return str(message)
+        return default
 
 
 requests = None

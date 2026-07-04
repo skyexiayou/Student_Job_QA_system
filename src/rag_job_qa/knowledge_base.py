@@ -4,6 +4,7 @@ import shutil
 import time
 import hashlib
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable, List
@@ -16,6 +17,18 @@ from .vector_store import VectorStore
 
 
 logger = logging.getLogger(__name__)
+
+GRAPH_NODE_LIMIT_DEFAULT = 120
+GRAPH_NODE_LIMIT_MIN = 20
+GRAPH_NODE_LIMIT_MAX = 240
+
+
+def clamp_graph_node_limit(limit: int | str | None) -> int:
+    try:
+        value = int(limit or GRAPH_NODE_LIMIT_DEFAULT)
+    except (TypeError, ValueError):
+        value = GRAPH_NODE_LIMIT_DEFAULT
+    return max(GRAPH_NODE_LIMIT_MIN, min(value, GRAPH_NODE_LIMIT_MAX))
 
 
 class KnowledgeBase:
@@ -102,7 +115,7 @@ class KnowledgeBase:
                 skipped_duplicates += 1
                 failed_documents.append({"filename": file.name, "reason": "duplicate md5"})
                 continue
-            safe_name = f"{int(time.time())}_{file_md5[:8]}_{file.name}"
+            safe_name = self._summarized_filename(file, parsed_text, file_md5, upload_dir)
             target = upload_dir / safe_name
             if file.resolve() != target.resolve():
                 shutil.copy2(file, target)
@@ -261,7 +274,8 @@ class KnowledgeBase:
             pass
         return classify_job_category(sample)
 
-    def graph_data(self, category: str = "", limit: int = 240) -> dict:
+    def graph_data(self, category: str = "", limit: int = GRAPH_NODE_LIMIT_DEFAULT) -> dict:
+        limit = clamp_graph_node_limit(limit)
         data = self.graph_store.graph_data("" if category == "all" else category, limit)
         if data.get("nodes") or data.get("neo4j_enabled"):
             return data
@@ -302,7 +316,10 @@ class KnowledgeBase:
                 }
             )
             edges.append({"id": f"{chunk_category}:{chunk.source}", "source": f"category:{chunk_category}", "target": doc_id, "type": "RELATED_TO"})
-        return {"nodes": nodes[:limit], "edges": edges[:limit], "neo4j_enabled": False}
+        visible_nodes = nodes[:limit]
+        visible_node_ids = {node["id"] for node in visible_nodes}
+        visible_edges = [edge for edge in edges if edge["source"] in visible_node_ids and edge["target"] in visible_node_ids]
+        return {"nodes": visible_nodes, "edges": visible_edges, "raw_edge_count": len(visible_edges), "neo4j_enabled": False}
 
     def node_detail(self, node_id: str, relation_type: str = "") -> dict:
         if node_id.startswith("category:"):
@@ -411,13 +428,36 @@ class KnowledgeBase:
 
     def delete_document(self, filename: str) -> None:
         """删除单个上传文档并重建索引。"""
-        filepath = self._find_document(filename)
-        if filepath.exists() and filepath.is_file():
-            filepath.unlink()
+        if self._delete_document_file(filename):
             self.rebuild()
+
+    def delete_documents(self, filenames: Iterable[str]) -> dict:
+        """Delete multiple documents and rebuild the index once."""
+        deleted = []
+        missing = []
+        seen = set()
+        for filename in filenames:
+            normalized = str(filename or "").strip()
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            if self._delete_document_file(normalized):
+                deleted.append(normalized)
+            else:
+                missing.append(normalized)
+        if deleted:
+            self.rebuild()
+        return {"deleted": deleted, "missing": missing, "deleted_count": len(deleted)}
 
     def document_file_path(self, filename: str) -> Path:
         return self._find_document(filename)
+
+    def _delete_document_file(self, filename: str) -> bool:
+        filepath = self._find_document(filename)
+        if filepath.exists() and filepath.is_file():
+            filepath.unlink()
+            return True
+        return False
 
     def _count_chunks_for_file(self, filename: str) -> int:
         return sum(1 for chunk in self.store.chunks if filename in chunk.source)
@@ -436,6 +476,37 @@ class KnowledgeBase:
             if path.is_file() and path.suffix.lower() in SUPPORTED_SUFFIXES:
                 values.add(self._file_md5(path))
         return values
+
+    def _summarized_filename(self, file: Path, parsed_text: str, file_md5: str, upload_dir: Path) -> str:
+        suffix = file.suffix.lower()
+        title = self._extract_document_title(file, parsed_text)
+        stem = self._sanitize_filename_stem(title) or self._sanitize_filename_stem(file.stem) or "knowledge_doc"
+        stem = stem[:32].strip(" ._-") or "knowledge_doc"
+        candidate = f"{stem}{suffix}"
+        if not (upload_dir / candidate).exists():
+            return candidate
+        return f"{stem}_{file_md5[:6]}{suffix}"
+
+    def _extract_document_title(self, file: Path, parsed_text: str) -> str:
+        original = re.sub(r"^\d{8,}[_-]?", "", file.stem)
+        original = re.sub(r"^[0-9a-fA-F]{6,12}[_-]?", "", original)
+        lines = [line.strip(" #\t\r\n-_|") for line in parsed_text.splitlines() if line.strip()]
+        for line in lines[:20]:
+            line = re.sub(r"^\[[^\]]+\]\s*", "", line)
+            if 6 <= len(line) <= 48 and not re.fullmatch(r"[\d\s./:-]+", line):
+                return line
+        cleaned = re.sub(r"[_-]+", " ", original).strip()
+        cleaned = re.sub(r"\s+", " ", cleaned)
+        for marker in (" - ", "_", " | ", "—"):
+            if marker in cleaned and len(cleaned) > 32:
+                cleaned = cleaned.split(marker, 1)[0].strip()
+        return cleaned
+
+    @staticmethod
+    def _sanitize_filename_stem(value: str) -> str:
+        value = re.sub(r"[\\/:*?\"<>|]", " ", value or "")
+        value = re.sub(r"\s+", " ", value).strip()
+        return value.strip(". ")
 
     def _iter_user_documents(self):
         upload_roots = self._upload_roots()
@@ -479,21 +550,29 @@ class KnowledgeBase:
     def _find_document(self, filename: str) -> Path:
         normalized = str(filename).replace("\\", "/").strip("/")
         for root in self._upload_roots():
-            direct_nested = root / normalized
-            if direct_nested.exists():
+            direct_nested = self._safe_child_path(root, normalized)
+            if direct_nested and direct_nested.exists():
                 return direct_nested
-        direct_seed = self.settings.seed_knowledge_dir / normalized
-        if direct_seed.exists():
+        direct_seed = self._safe_child_path(self.settings.seed_knowledge_dir, normalized)
+        if direct_seed and direct_seed.exists():
             return direct_seed
         for root in self._upload_roots():
-            direct_docs = root / Path(normalized).name
-            if direct_docs.exists():
+            direct_docs = self._safe_child_path(root, Path(normalized).name)
+            if direct_docs and direct_docs.exists():
                 return direct_docs
         safe_name = Path(normalized).name
         for path in self._iter_user_documents():
             if path.name == safe_name or self._document_id(path) == normalized:
                 return path
         return self.settings.documents_dir / safe_name
+
+    def _safe_child_path(self, root: Path, filename: str) -> Path | None:
+        candidate = root / filename
+        try:
+            candidate.resolve().relative_to(root.resolve())
+            return candidate
+        except ValueError:
+            return None
 
     def _upload_roots(self) -> list[Path]:
         roots = [self.settings.documents_dir]

@@ -194,6 +194,8 @@ class RAGService:
         top_k: int,
     ):
         raw_answer = self._clean_system_message("".join(parts).strip())
+        if not raw_answer:
+            raw_answer = self._empty_answer_for(session_type)
         answer = self._append_sources(raw_answer, retrieved)
         appended = answer[len(raw_answer) :]
         if appended:
@@ -269,6 +271,18 @@ class RAGService:
             if "\u53c2\u8003\u6765\u6e90" not in answer:
                 answer += "\n\n\u53c2\u8003\u6765\u6e90\uff1a" + "\u3001".join(f"[{source}]" for source in sorted(sources))
         return answer
+
+    def _empty_answer_for(self, session_type: str) -> str:
+        if session_type == "interview":
+            return (
+                "### 面试官回应：\n"
+                "我刚才没有收到稳定的模型输出。我们先继续面试，请你再补充一下：你做过的项目里，"
+                "最能体现后端能力的一项是什么？请重点说明你的职责、技术选型和结果。\n\n"
+                "### 简短分析：\n"
+                "- 这次更像是模型服务临时没有返回正文，不代表你的回答有问题。\n"
+                "- 你可以继续按真实面试节奏回答，系统会接着追问。"
+            )
+        return "当前模型服务没有返回有效正文，请稍后重试，或换一种问法继续提问。"
 
     def _clean_system_message(self, text: str) -> str:
         if not text:
